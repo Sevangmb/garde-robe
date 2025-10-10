@@ -600,3 +600,301 @@ def fring_widget(request):
         'user': request.user,
     }
     return render(request, 'vetements/fring_widget.html', context)
+
+
+# Gestion des amis
+@login_required
+def amis_list(request):
+    """Liste des amis et demandes d'amitié"""
+    # Récupérer les amis acceptés
+    amities_acceptees = Amitie.objects.filter(
+        Q(demandeur=request.user, statut='acceptee') |
+        Q(destinataire=request.user, statut='acceptee')
+    )
+
+    amis = []
+    for amitie in amities_acceptees:
+        if amitie.demandeur == request.user:
+            amis.append({
+                'user': amitie.destinataire,
+                'depuis': amitie.date_reponse,
+                'amitie_id': amitie.id
+            })
+        else:
+            amis.append({
+                'user': amitie.demandeur,
+                'depuis': amitie.date_reponse,
+                'amitie_id': amitie.id
+            })
+
+    # Demandes d'amitié reçues (en attente)
+    demandes_recues = Amitie.objects.filter(
+        destinataire=request.user,
+        statut='en_attente'
+    ).order_by('-date_demande')
+
+    # Demandes d'amitié envoyées (en attente)
+    demandes_envoyees = Amitie.objects.filter(
+        demandeur=request.user,
+        statut='en_attente'
+    ).order_by('-date_demande')
+
+    # Tous les utilisateurs pour rechercher des amis
+    tous_utilisateurs = User.objects.exclude(pk=request.user.pk).order_by('username')
+
+    # Exclure les utilisateurs déjà amis ou avec demande en cours
+    amis_ids = [ami['user'].id for ami in amis]
+    demandes_ids = list(demandes_recues.values_list('demandeur_id', flat=True)) + \
+                   list(demandes_envoyees.values_list('destinataire_id', flat=True))
+
+    utilisateurs_disponibles = tous_utilisateurs.exclude(
+        Q(id__in=amis_ids) | Q(id__in=demandes_ids)
+    )
+
+    context = {
+        'amis': amis,
+        'demandes_recues': demandes_recues,
+        'demandes_envoyees': demandes_envoyees,
+        'utilisateurs_disponibles': utilisateurs_disponibles,
+    }
+    return render(request, 'vetements/amis_list.html', context)
+
+
+@login_required
+def amitie_demander(request, user_id):
+    """Envoyer une demande d'amitié"""
+    destinataire = get_object_or_404(User, pk=user_id)
+
+    if destinataire == request.user:
+        messages.error(request, "Vous ne pouvez pas vous ajouter vous-même.")
+        return redirect('vetements:amis_list')
+
+    # Vérifier qu'il n'y a pas déjà une relation
+    relation_existante = Amitie.objects.filter(
+        Q(demandeur=request.user, destinataire=destinataire) |
+        Q(demandeur=destinataire, destinataire=request.user)
+    ).first()
+
+    if relation_existante:
+        if relation_existante.statut == 'en_attente':
+            messages.warning(request, "Une demande d'amitié est déjà en cours.")
+        elif relation_existante.statut == 'acceptee':
+            messages.info(request, f"Vous êtes déjà ami avec {destinataire.username}.")
+        else:
+            messages.error(request, "Une relation existe déjà.")
+    else:
+        # Créer la demande d'amitié
+        Amitie.objects.create(
+            demandeur=request.user,
+            destinataire=destinataire,
+            statut='en_attente'
+        )
+        messages.success(request, f"Demande d'amitié envoyée à {destinataire.username}!")
+
+    return redirect('vetements:amis_list')
+
+
+@login_required
+def amitie_accepter(request, amitie_id):
+    """Accepter une demande d'amitié"""
+    amitie = get_object_or_404(Amitie, pk=amitie_id, destinataire=request.user, statut='en_attente')
+
+    amitie.statut = 'acceptee'
+    amitie.date_reponse = timezone.now()
+    amitie.save()
+
+    messages.success(request, f"Vous êtes maintenant ami avec {amitie.demandeur.username}!")
+    return redirect('vetements:amis_list')
+
+
+@login_required
+def amitie_refuser(request, amitie_id):
+    """Refuser une demande d'amitié"""
+    amitie = get_object_or_404(Amitie, pk=amitie_id, destinataire=request.user, statut='en_attente')
+
+    amitie.statut = 'refusee'
+    amitie.date_reponse = timezone.now()
+    amitie.save()
+
+    messages.info(request, f"Demande d'amitié de {amitie.demandeur.username} refusée.")
+    return redirect('vetements:amis_list')
+
+
+@login_required
+def amitie_supprimer(request, amitie_id):
+    """Supprimer une amitié ou annuler une demande"""
+    amitie = get_object_or_404(
+        Amitie,
+        Q(pk=amitie_id),
+        Q(demandeur=request.user) | Q(destinataire=request.user)
+    )
+
+    if amitie.demandeur == request.user:
+        autre_user = amitie.destinataire
+    else:
+        autre_user = amitie.demandeur
+
+    amitie.delete()
+    messages.success(request, f"Relation avec {autre_user.username} supprimée.")
+    return redirect('vetements:amis_list')
+
+
+# Marketplace
+@login_required
+def marketplace_liste(request):
+    """Liste des vêtements en vente sur le marketplace"""
+    # Vêtements en vente (sauf les miens)
+    annonces = AnnonceVente.objects.filter(
+        statut='en_vente'
+    ).exclude(
+        vendeur=request.user
+    ).select_related('vetement', 'vendeur').order_by('-date_publication')
+
+    # Filtrage par catégorie
+    categorie_id = request.GET.get('categorie')
+    if categorie_id:
+        annonces = annonces.filter(vetement__categorie_id=categorie_id)
+
+    # Filtrage par prix
+    prix_max = request.GET.get('prix_max')
+    if prix_max:
+        try:
+            annonces = annonces.filter(prix_vente__lte=float(prix_max))
+        except ValueError:
+            pass
+
+    # Recherche
+    recherche = request.GET.get('q')
+    if recherche:
+        annonces = annonces.filter(
+            Q(vetement__nom__icontains=recherche) |
+            Q(description_vente__icontains=recherche) |
+            Q(vetement__marque__icontains=recherche)
+        )
+
+    context = {
+        'annonces': annonces,
+        'categories': Categorie.objects.all(),
+    }
+    return render(request, 'vetements/marketplace_liste.html', context)
+
+
+@login_required
+def marketplace_mes_annonces(request):
+    """Mes annonces de vente"""
+    mes_annonces = AnnonceVente.objects.filter(
+        vendeur=request.user
+    ).select_related('vetement', 'acheteur').order_by('-date_publication')
+
+    context = {
+        'annonces': mes_annonces,
+    }
+    return render(request, 'vetements/marketplace_mes_annonces.html', context)
+
+
+@login_required
+def marketplace_annonce_detail(request, annonce_id):
+    """Détail d'une annonce de vente"""
+    annonce = get_object_or_404(
+        AnnonceVente.objects.select_related('vetement', 'vendeur', 'acheteur'),
+        pk=annonce_id
+    )
+
+    context = {
+        'annonce': annonce,
+    }
+    return render(request, 'vetements/marketplace_annonce_detail.html', context)
+
+
+@login_required
+def marketplace_creer_annonce(request, vetement_id):
+    """Créer une annonce de vente pour un vêtement"""
+    vetement = get_object_or_404(Vetement, pk=vetement_id, proprietaire=request.user)
+
+    # Vérifier qu'il n'y a pas déjà une annonce
+    if hasattr(vetement, 'annonce_vente'):
+        messages.warning(request, "Ce vêtement est déjà en vente.")
+        return redirect('vetements:marketplace_mes_annonces')
+
+    if request.method == 'POST':
+        prix = request.POST.get('prix_vente')
+        description = request.POST.get('description_vente', '')
+        negociable = request.POST.get('negociable') == 'on'
+        livraison = request.POST.get('livraison_possible') == 'on'
+
+        if prix:
+            try:
+                prix_decimal = float(prix)
+                if prix_decimal <= 0:
+                    messages.error(request, "Le prix doit être supérieur à 0.")
+                else:
+                    AnnonceVente.objects.create(
+                        vetement=vetement,
+                        vendeur=request.user,
+                        prix_vente=prix_decimal,
+                        description_vente=description,
+                        negociable=negociable,
+                        livraison_possible=livraison,
+                        statut='en_vente'
+                    )
+                    messages.success(request, f"Annonce créée pour {vetement.nom}!")
+                    return redirect('vetements:marketplace_mes_annonces')
+            except ValueError:
+                messages.error(request, "Prix invalide.")
+        else:
+            messages.error(request, "Le prix est obligatoire.")
+
+    context = {
+        'vetement': vetement,
+    }
+    return render(request, 'vetements/marketplace_creer_annonce.html', context)
+
+
+@login_required
+def marketplace_modifier_annonce(request, annonce_id):
+    """Modifier une annonce de vente"""
+    annonce = get_object_or_404(AnnonceVente, pk=annonce_id, vendeur=request.user)
+
+    if request.method == 'POST':
+        prix = request.POST.get('prix_vente')
+        description = request.POST.get('description_vente', '')
+        negociable = request.POST.get('negociable') == 'on'
+        livraison = request.POST.get('livraison_possible') == 'on'
+        statut = request.POST.get('statut')
+
+        if prix:
+            try:
+                prix_decimal = float(prix)
+                if prix_decimal <= 0:
+                    messages.error(request, "Le prix doit être supérieur à 0.")
+                else:
+                    annonce.prix_vente = prix_decimal
+                    annonce.description_vente = description
+                    annonce.negociable = negociable
+                    annonce.livraison_possible = livraison
+                    if statut in ['en_vente', 'retiree']:
+                        annonce.statut = statut
+                    annonce.save()
+                    messages.success(request, "Annonce modifiée!")
+                    return redirect('vetements:marketplace_mes_annonces')
+            except ValueError:
+                messages.error(request, "Prix invalide.")
+        else:
+            messages.error(request, "Le prix est obligatoire.")
+
+    context = {
+        'annonce': annonce,
+    }
+    return render(request, 'vetements/marketplace_modifier_annonce.html', context)
+
+
+@login_required
+def marketplace_supprimer_annonce(request, annonce_id):
+    """Supprimer une annonce de vente"""
+    annonce = get_object_or_404(AnnonceVente, pk=annonce_id, vendeur=request.user)
+
+    vetement_nom = annonce.vetement.nom
+    annonce.delete()
+
+    messages.success(request, f"Annonce pour {vetement_nom} supprimée.")
+    return redirect('vetements:marketplace_mes_annonces')

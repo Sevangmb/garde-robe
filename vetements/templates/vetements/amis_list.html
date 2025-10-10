@@ -1,0 +1,329 @@
+{% extends 'vetements/base.html' %}
+
+{% block title %}Mes amis - Ma Garde-Robe{% endblock %}
+
+{% block content %}
+<style>
+    :root {
+        --mauve-rose: #B09199;
+        --rouge-corail: #E94B5A;
+        --jaune-pastel: #F5D987;
+        --orange-mandarine: #E8874F;
+        --violet-mauve: #8C7A9E;
+        --beige-clair: #FDFBF7;
+        --gris-chaud: #6B6560;
+        --gris-clair: #F5F3F0;
+    }
+
+    .amis-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .section-title {
+        background: linear-gradient(135deg, var(--violet-mauve) 0%, var(--mauve-rose) 100%);
+        color: white;
+        padding: 20px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        box-shadow: 0 4px 12px rgba(140, 122, 158, 0.3);
+    }
+
+    .section-title h1 {
+        margin: 0;
+        font-size: 1.8rem;
+        font-weight: 300;
+    }
+
+    .section-card {
+        background: white;
+        border-radius: 12px;
+        padding: 25px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .section-card h2 {
+        color: var(--violet-mauve);
+        font-size: 1.4rem;
+        margin: 0 0 20px 0;
+        padding-bottom: 10px;
+        border-bottom: 2px solid var(--gris-clair);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .ami-item, .demande-item, .user-item {
+        padding: 15px;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        transition: all 0.3s;
+        border: 1px solid var(--gris-clair);
+    }
+
+    .ami-item:hover, .demande-item:hover, .user-item:hover {
+        transform: translateX(5px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        border-color: var(--violet-mauve);
+    }
+
+    .user-info {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .user-avatar {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--mauve-rose), var(--violet-mauve));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+        font-size: 1.2rem;
+    }
+
+    .user-details {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .user-name {
+        font-weight: 600;
+        color: var(--gris-chaud);
+        font-size: 1.1rem;
+    }
+
+    .user-meta {
+        font-size: 0.85rem;
+        color: #999;
+    }
+
+    .actions {
+        display: flex;
+        gap: 8px;
+    }
+
+    .btn {
+        padding: 8px 16px;
+        border-radius: 6px;
+        border: none;
+        cursor: pointer;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.3s;
+        font-size: 0.9rem;
+    }
+
+    .btn-primary {
+        background: var(--violet-mauve);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: var(--mauve-rose);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(140, 122, 158, 0.3);
+    }
+
+    .btn-success {
+        background: #4CAF50;
+        color: white;
+    }
+
+    .btn-success:hover {
+        background: #45a049;
+    }
+
+    .btn-danger {
+        background: var(--rouge-corail);
+        color: white;
+    }
+
+    .btn-danger:hover {
+        background: #d43f4e;
+    }
+
+    .btn-secondary {
+        background: var(--gris-clair);
+        color: var(--gris-chaud);
+    }
+
+    .btn-secondary:hover {
+        background: var(--gris-chaud);
+        color: white;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 40px;
+        color: #999;
+    }
+
+    .empty-state i {
+        font-size: 64px;
+        color: var(--violet-mauve);
+        margin-bottom: 15px;
+    }
+
+    .badge {
+        background: var(--orange-mandarine);
+        color: white;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+</style>
+
+<div class="amis-container">
+    <div class="section-title">
+        <i class="material-icons" style="font-size: 2.5rem;">group</i>
+        <h1>Mes amis</h1>
+    </div>
+
+    <!-- Demandes reçues -->
+    {% if demandes_recues %}
+    <div class="section-card">
+        <h2>
+            <i class="material-icons">notifications_active</i>
+            Demandes d'amitié reçues
+            <span class="badge">{{ demandes_recues.count }}</span>
+        </h2>
+        {% for demande in demandes_recues %}
+        <div class="demande-item">
+            <div class="user-info">
+                <div class="user-avatar">{{ demande.demandeur.username.0|upper }}</div>
+                <div class="user-details">
+                    <span class="user-name">{{ demande.demandeur.username }}</span>
+                    <span class="user-meta">Demande envoyée le {{ demande.date_demande|date:"d/m/Y" }}</span>
+                </div>
+            </div>
+            <div class="actions">
+                <a href="{% url 'vetements:amitie_accepter' demande.id %}" class="btn btn-success">
+                    <i class="material-icons" style="font-size: 18px;">check</i>
+                    Accepter
+                </a>
+                <a href="{% url 'vetements:amitie_refuser' demande.id %}" class="btn btn-danger">
+                    <i class="material-icons" style="font-size: 18px;">close</i>
+                    Refuser
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Mes amis -->
+    <div class="section-card">
+        <h2>
+            <i class="material-icons">people</i>
+            Mes amis ({{ amis|length }})
+        </h2>
+        {% if amis %}
+            {% for ami in amis %}
+            <div class="ami-item">
+                <div class="user-info">
+                    <div class="user-avatar">{{ ami.user.username.0|upper }}</div>
+                    <div class="user-details">
+                        <span class="user-name">{{ ami.user.username }}</span>
+                        <span class="user-meta">Amis depuis le {{ ami.depuis|date:"d/m/Y" }}</span>
+                    </div>
+                </div>
+                <div class="actions">
+                    <a href="{% url 'vetements:message_compose_to' ami.user.id %}" class="btn btn-primary">
+                        <i class="material-icons" style="font-size: 18px;">mail</i>
+                        Message
+                    </a>
+                    <a href="{% url 'vetements:amitie_supprimer' ami.amitie_id %}" class="btn btn-secondary"
+                       onclick="return confirm('Voulez-vous vraiment supprimer cette amitié ?')">
+                        <i class="material-icons" style="font-size: 18px;">person_remove</i>
+                        Retirer
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <i class="material-icons">people_outline</i>
+                <p>Vous n'avez pas encore d'amis. Ajoutez des utilisateurs ci-dessous !</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- Demandes envoyées -->
+    {% if demandes_envoyees %}
+    <div class="section-card">
+        <h2>
+            <i class="material-icons">schedule</i>
+            Demandes envoyées en attente
+        </h2>
+        {% for demande in demandes_envoyees %}
+        <div class="demande-item">
+            <div class="user-info">
+                <div class="user-avatar">{{ demande.destinataire.username.0|upper }}</div>
+                <div class="user-details">
+                    <span class="user-name">{{ demande.destinataire.username }}</span>
+                    <span class="user-meta">En attente depuis le {{ demande.date_demande|date:"d/m/Y" }}</span>
+                </div>
+            </div>
+            <div class="actions">
+                <a href="{% url 'vetements:amitie_supprimer' demande.id %}" class="btn btn-secondary">
+                    <i class="material-icons" style="font-size: 18px;">cancel</i>
+                    Annuler
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Ajouter des amis -->
+    <div class="section-card">
+        <h2>
+            <i class="material-icons">person_add</i>
+            Ajouter des amis
+        </h2>
+        {% if utilisateurs_disponibles %}
+            {% for utilisateur in utilisateurs_disponibles %}
+            <div class="user-item">
+                <div class="user-info">
+                    <div class="user-avatar">{{ utilisateur.username.0|upper }}</div>
+                    <div class="user-details">
+                        <span class="user-name">{{ utilisateur.username }}</span>
+                        {% if utilisateur.email %}
+                        <span class="user-meta">{{ utilisateur.email }}</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="actions">
+                    <a href="{% url 'vetements:amitie_demander' utilisateur.id %}" class="btn btn-primary">
+                        <i class="material-icons" style="font-size: 18px;">person_add</i>
+                        Ajouter
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <i class="material-icons">check_circle</i>
+                <p>Vous avez déjà ajouté tous les utilisateurs disponibles !</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,20 @@
+{% extends 'vetements/marketplace_creer_annonce.html' %}
+
+{% block title %}Modifier l'annonce - Ma Garde-Robe{% endblock %}
+
+{% block content %}
+{{ block.super }}
+<script>
+    // Pré-remplir le formulaire avec les données existantes
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('prix_vente').value = '{{ annonce.prix_vente }}';
+        document.getElementById('description_vente').value = '{{ annonce.description_vente|escapejs }}';
+        document.getElementById('negociable').checked = {{ annonce.negociable|yesno:"true,false" }};
+        document.getElementById('livraison_possible').checked = {{ annonce.livraison_possible|yesno:"true,false" }};
+
+        // Changer le titre
+        document.querySelector('.page-header h1').textContent = 'Modifier l\'annonce';
+        document.querySelector('.form-actions button[type="submit"]').innerHTML = '<i class="material-icons">save</i>Sauvegarder';
+    });
+</script>
+{% endblock %}

@@ -183,6 +183,16 @@
                         {% endif %}
                     </a>
                 </li>
+                <li class="{% if 'amis' in request.resolver_match.url_name or 'amitie' in request.resolver_match.url_name %}active{% endif %}">
+                    <a href="{% url 'vetements:amis_list' %}" class="waves-effect tooltipped" data-position="bottom" data-tooltip="Mes amis">
+                        <i class="material-icons">group</i>
+                    </a>
+                </li>
+                <li class="{% if 'marketplace' in request.resolver_match.url_name %}active{% endif %}">
+                    <a href="{% url 'vetements:marketplace_liste' %}" class="waves-effect tooltipped" data-position="bottom" data-tooltip="Marketplace">
+                        <i class="material-icons">store</i>
+                    </a>
+                </li>
                 {% if user.is_superuser %}
                 <li>
                     <a href="/admin/" class="waves-effect tooltipped" data-position="bottom" data-tooltip="Administration">
@@ -269,6 +279,16 @@
                 {% if unread_messages_count > 0 %}
                 <span class="new badge amber" data-badge-caption="">{{ unread_messages_count }}</span>
                 {% endif %}
+            </a>
+        </li>
+        <li class="{% if 'amis' in request.resolver_match.url_name or 'amitie' in request.resolver_match.url_name %}active{% endif %}">
+            <a href="{% url 'vetements:amis_list' %}" class="waves-effect">
+                <i class="material-icons" style="color: #8C7A9E;">group</i>Mes amis
+            </a>
+        </li>
+        <li class="{% if 'marketplace' in request.resolver_match.url_name %}active{% endif %}">
+            <a href="{% url 'vetements:marketplace_liste' %}" class="waves-effect">
+                <i class="material-icons" style="color: #E94B5A;">store</i>Marketplace
             </a>
         </li>
 

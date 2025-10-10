@@ -1,0 +1,331 @@
+{% extends 'vetements/base.html' %}
+
+{% block title %}Mes annonces - Ma Garde-Robe{% endblock %}
+
+{% block content %}
+<style>
+    :root {
+        --mauve-rose: #B09199;
+        --rouge-corail: #E94B5A;
+        --jaune-pastel: #F5D987;
+        --orange-mandarine: #E8874F;
+        --violet-mauve: #8C7A9E;
+        --beige-clair: #FDFBF7;
+        --gris-chaud: #6B6560;
+        --gris-clair: #F5F3F0;
+    }
+
+    .mes-annonces-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .page-header {
+        background: linear-gradient(135deg, var(--rouge-corail) 0%, var(--orange-mandarine) 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 4px 12px rgba(233, 75, 90, 0.3);
+    }
+
+    .page-header h1 {
+        margin: 0;
+        font-size: 2rem;
+        font-weight: 300;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .annonces-list {
+        background: white;
+        border-radius: 12px;
+        padding: 25px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .annonce-item {
+        border-bottom: 1px solid var(--gris-clair);
+        padding: 20px 0;
+        display: flex;
+        gap: 20px;
+        align-items: center;
+    }
+
+    .annonce-item:last-child {
+        border-bottom: none;
+    }
+
+    .annonce-image {
+        width: 120px;
+        height: 120px;
+        border-radius: 8px;
+        background: var(--gris-clair);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        flex-shrink: 0;
+    }
+
+    .annonce-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .annonce-image.no-image {
+        background: linear-gradient(135deg, rgba(233, 75, 90, 0.1) 0%, rgba(232, 135, 79, 0.1) 100%);
+    }
+
+    .annonce-details {
+        flex: 1;
+    }
+
+    .annonce-titre {
+        font-size: 1.3rem;
+        font-weight: 600;
+        color: var(--gris-chaud);
+        margin: 0 0 8px 0;
+    }
+
+    .annonce-prix {
+        font-size: 1.5rem;
+        color: var(--rouge-corail);
+        font-weight: 700;
+        margin-bottom: 8px;
+    }
+
+    .annonce-meta {
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+        margin-bottom: 10px;
+    }
+
+    .meta-item {
+        font-size: 0.85rem;
+        color: #999;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .badge {
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .badge-en-vente {
+        background: rgba(76, 175, 80, 0.15);
+        color: #4CAF50;
+    }
+
+    .badge-reservee {
+        background: rgba(255, 152, 0, 0.15);
+        color: #FF9800;
+    }
+
+    .badge-vendue {
+        background: rgba(33, 150, 243, 0.15);
+        color: #2196F3;
+    }
+
+    .badge-retiree {
+        background: rgba(158, 158, 158, 0.15);
+        color: #9E9E9E;
+    }
+
+    .annonce-actions {
+        display: flex;
+        gap: 8px;
+        flex-direction: column;
+    }
+
+    .btn {
+        padding: 8px 16px;
+        border-radius: 6px;
+        border: none;
+        cursor: pointer;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        transition: all 0.3s;
+        font-size: 0.9rem;
+        white-space: nowrap;
+    }
+
+    .btn-primary {
+        background: var(--rouge-corail);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: var(--orange-mandarine);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(233, 75, 90, 0.3);
+    }
+
+    .btn-secondary {
+        background: var(--gris-clair);
+        color: var(--gris-chaud);
+    }
+
+    .btn-secondary:hover {
+        background: var(--gris-chaud);
+        color: white;
+    }
+
+    .btn-danger {
+        background: #f44336;
+        color: white;
+    }
+
+    .btn-danger:hover {
+        background: #d32f2f;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+    }
+
+    .empty-state i {
+        font-size: 80px;
+        color: var(--rouge-corail);
+        margin-bottom: 20px;
+    }
+
+    @media (max-width: 768px) {
+        .annonce-item {
+            flex-direction: column;
+            text-align: center;
+        }
+
+        .annonce-actions {
+            flex-direction: row;
+            justify-content: center;
+        }
+    }
+</style>
+
+<div class="mes-annonces-container">
+    <div class="page-header">
+        <h1>
+            <i class="material-icons" style="font-size: 2.5rem;">inventory</i>
+            Mes annonces
+        </h1>
+        <a href="{% url 'vetements:marketplace_liste' %}" class="btn btn-primary">
+            <i class="material-icons">store</i>
+            Voir le marketplace
+        </a>
+    </div>
+
+    <div class="annonces-list">
+        {% if annonces %}
+            {% for annonce in annonces %}
+            <div class="annonce-item">
+                <div class="annonce-image {% if not annonce.vetement.image %}no-image{% endif %}">
+                    {% if annonce.vetement.image %}
+                    <img src="{{ annonce.vetement.image.url }}" alt="{{ annonce.vetement.nom }}">
+                    {% else %}
+                    <i class="material-icons" style="font-size: 60px; color: var(--rouge-corail);">checkroom</i>
+                    {% endif %}
+                </div>
+
+                <div class="annonce-details">
+                    <h3 class="annonce-titre">{{ annonce.vetement.nom }}</h3>
+                    <div class="annonce-prix">{{ annonce.prix_vente }}€</div>
+
+                    <div class="annonce-meta">
+                        <span class="meta-item">
+                            <i class="material-icons" style="font-size: 14px;">calendar_today</i>
+                            Publié le {{ annonce.date_publication|date:"d/m/Y" }}
+                        </span>
+                        {% if annonce.negociable %}
+                        <span class="meta-item">
+                            <i class="material-icons" style="font-size: 14px;">handshake</i>
+                            Négociable
+                        </span>
+                        {% endif %}
+                        {% if annonce.livraison_possible %}
+                        <span class="meta-item">
+                            <i class="material-icons" style="font-size: 14px;">local_shipping</i>
+                            Livraison possible
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    {% if annonce.statut == 'en_vente' %}
+                    <span class="badge badge-en-vente">
+                        <i class="material-icons" style="font-size: 12px;">sell</i>
+                        En vente
+                    </span>
+                    {% elif annonce.statut == 'reservee' %}
+                    <span class="badge badge-reservee">
+                        <i class="material-icons" style="font-size: 12px;">schedule</i>
+                        Réservée
+                    </span>
+                    {% elif annonce.statut == 'vendue' %}
+                    <span class="badge badge-vendue">
+                        <i class="material-icons" style="font-size: 12px;">check_circle</i>
+                        Vendue le {{ annonce.date_vente|date:"d/m/Y" }}
+                    </span>
+                    {% elif annonce.statut == 'retiree' %}
+                    <span class="badge badge-retiree">
+                        <i class="material-icons" style="font-size: 12px;">cancel</i>
+                        Retirée
+                    </span>
+                    {% endif %}
+
+                    {% if annonce.acheteur %}
+                    <div class="meta-item" style="margin-top: 8px;">
+                        <i class="material-icons" style="font-size: 14px;">person</i>
+                        Acheteur: {{ annonce.acheteur.username }}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="annonce-actions">
+                    <a href="{% url 'vetements:marketplace_annonce_detail' annonce.id %}" class="btn btn-primary">
+                        <i class="material-icons" style="font-size: 18px;">visibility</i>
+                        Voir
+                    </a>
+                    {% if annonce.statut == 'en_vente' %}
+                    <a href="{% url 'vetements:marketplace_modifier_annonce' annonce.id %}" class="btn btn-secondary">
+                        <i class="material-icons" style="font-size: 18px;">edit</i>
+                        Modifier
+                    </a>
+                    {% endif %}
+                    <a href="{% url 'vetements:marketplace_supprimer_annonce' annonce.id %}" class="btn btn-danger"
+                       onclick="return confirm('Voulez-vous vraiment supprimer cette annonce ?')">
+                        <i class="material-icons" style="font-size: 18px;">delete</i>
+                        Supprimer
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <i class="material-icons">inventory_2</i>
+                <h2>Aucune annonce</h2>
+                <p>Vous n'avez pas encore créé d'annonce de vente.</p>
+                <p>Allez dans votre garde-robe pour mettre un vêtement en vente !</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

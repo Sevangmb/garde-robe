@@ -1,0 +1,327 @@
+{% extends 'vetements/base.html' %}
+
+{% block title %}Marketplace - Ma Garde-Robe{% endblock %}
+
+{% block content %}
+<style>
+    :root {
+        --mauve-rose: #B09199;
+        --rouge-corail: #E94B5A;
+        --jaune-pastel: #F5D987;
+        --orange-mandarine: #E8874F;
+        --violet-mauve: #8C7A9E;
+        --beige-clair: #FDFBF7;
+        --gris-chaud: #6B6560;
+        --gris-clair: #F5F3F0;
+    }
+
+    .marketplace-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .marketplace-header {
+        background: linear-gradient(135deg, var(--rouge-corail) 0%, var(--orange-mandarine) 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 4px 12px rgba(233, 75, 90, 0.3);
+    }
+
+    .marketplace-header h1 {
+        margin: 0;
+        font-size: 2rem;
+        font-weight: 300;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .filters-section {
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .filters-form {
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+        align-items: end;
+    }
+
+    .filter-group {
+        flex: 1;
+        min-width: 200px;
+    }
+
+    .filter-group label {
+        display: block;
+        margin-bottom: 5px;
+        color: var(--gris-chaud);
+        font-weight: 500;
+        font-size: 0.9rem;
+    }
+
+    .filter-group input,
+    .filter-group select {
+        width: 100%;
+        padding: 10px;
+        border: 2px solid var(--gris-clair);
+        border-radius: 8px;
+        font-size: 1rem;
+    }
+
+    .filter-group input:focus,
+    .filter-group select:focus {
+        outline: none;
+        border-color: var(--rouge-corail);
+    }
+
+    .annonces-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 20px;
+    }
+
+    .annonce-card {
+        background: white;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        transition: all 0.3s;
+        cursor: pointer;
+        text-decoration: none;
+        color: inherit;
+        display: block;
+    }
+
+    .annonce-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    .annonce-image {
+        width: 100%;
+        height: 200px;
+        background: var(--gris-clair);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .annonce-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .annonce-image.no-image {
+        background: linear-gradient(135deg, rgba(233, 75, 90, 0.1) 0%, rgba(232, 135, 79, 0.1) 100%);
+    }
+
+    .annonce-prix {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: var(--rouge-corail);
+        color: white;
+        padding: 8px 15px;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 1.1rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .annonce-body {
+        padding: 15px;
+    }
+
+    .annonce-titre {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--gris-chaud);
+        margin: 0 0 8px 0;
+    }
+
+    .annonce-vendeur {
+        font-size: 0.85rem;
+        color: #999;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .annonce-badges {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+
+    .badge {
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .badge-negociable {
+        background: rgba(76, 175, 80, 0.15);
+        color: #4CAF50;
+    }
+
+    .badge-livraison {
+        background: rgba(140, 122, 158, 0.15);
+        color: var(--violet-mauve);
+    }
+
+    .btn {
+        padding: 10px 20px;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s;
+    }
+
+    .btn-primary {
+        background: var(--rouge-corail);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: var(--orange-mandarine);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(233, 75, 90, 0.3);
+    }
+
+    .btn-secondary {
+        background: var(--gris-clair);
+        color: var(--gris-chaud);
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .empty-state i {
+        font-size: 80px;
+        color: var(--rouge-corail);
+        margin-bottom: 20px;
+    }
+</style>
+
+<div class="marketplace-container">
+    <div class="marketplace-header">
+        <h1>
+            <i class="material-icons" style="font-size: 2.5rem;">store</i>
+            Marketplace
+        </h1>
+        <a href="{% url 'vetements:marketplace_mes_annonces' %}" class="btn btn-primary">
+            <i class="material-icons">inventory</i>
+            Mes annonces
+        </a>
+    </div>
+
+    <!-- Filtres -->
+    <div class="filters-section">
+        <form method="get" class="filters-form">
+            <div class="filter-group">
+                <label>Rechercher</label>
+                <input type="text" name="q" placeholder="Nom, marque..." value="{{ request.GET.q }}">
+            </div>
+            <div class="filter-group">
+                <label>Catégorie</label>
+                <select name="categorie">
+                    <option value="">Toutes</option>
+                    {% for categorie in categories %}
+                    <option value="{{ categorie.id }}" {% if request.GET.categorie == categorie.id|stringformat:"s" %}selected{% endif %}>
+                        {{ categorie.nom }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Prix maximum</label>
+                <input type="number" name="prix_max" placeholder="€" step="0.01" value="{{ request.GET.prix_max }}">
+            </div>
+            <button type="submit" class="btn btn-primary">
+                <i class="material-icons">search</i>
+                Rechercher
+            </button>
+            {% if request.GET %}
+            <a href="{% url 'vetements:marketplace_liste' %}" class="btn btn-secondary">
+                <i class="material-icons">clear</i>
+                Réinitialiser
+            </a>
+            {% endif %}
+        </form>
+    </div>
+
+    <!-- Annonces -->
+    {% if annonces %}
+    <div class="annonces-grid">
+        {% for annonce in annonces %}
+        <a href="{% url 'vetements:marketplace_annonce_detail' annonce.id %}" class="annonce-card">
+            <div class="annonce-image {% if not annonce.vetement.image %}no-image{% endif %}">
+                {% if annonce.vetement.image %}
+                <img src="{{ annonce.vetement.image.url }}" alt="{{ annonce.vetement.nom }}">
+                {% else %}
+                <i class="material-icons" style="font-size: 80px; color: var(--rouge-corail);">checkroom</i>
+                {% endif %}
+                <div class="annonce-prix">{{ annonce.prix_vente }}€</div>
+            </div>
+            <div class="annonce-body">
+                <h3 class="annonce-titre">{{ annonce.vetement.nom }}</h3>
+                <div class="annonce-vendeur">
+                    <i class="material-icons" style="font-size: 14px;">person</i>
+                    {{ annonce.vendeur.username }}
+                </div>
+                <div class="annonce-badges">
+                    {% if annonce.negociable %}
+                    <span class="badge badge-negociable">
+                        <i class="material-icons" style="font-size: 12px;">handshake</i>
+                        Négociable
+                    </span>
+                    {% endif %}
+                    {% if annonce.livraison_possible %}
+                    <span class="badge badge-livraison">
+                        <i class="material-icons" style="font-size: 12px;">local_shipping</i>
+                        Livraison
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="material-icons">store</i>
+        <h2>Aucun article en vente</h2>
+        <p>Il n'y a actuellement aucun vêtement disponible sur le marketplace.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

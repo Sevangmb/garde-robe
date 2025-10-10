@@ -1,0 +1,277 @@
+{% extends 'vetements/base.html' %}
+
+{% block title %}Créer une annonce - Ma Garde-Robe{% endblock %}
+
+{% block content %}
+<style>
+    :root {
+        --mauve-rose: #B09199;
+        --rouge-corail: #E94B5A;
+        --jaune-pastel: #F5D987;
+        --orange-mandarine: #E8874F;
+        --violet-mauve: #8C7A9E;
+        --beige-clair: #FDFBF7;
+        --gris-chaud: #6B6560;
+        --gris-clair: #F5F3F0;
+    }
+
+    .creer-annonce-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .page-header {
+        background: linear-gradient(135deg, var(--rouge-corail) 0%, var(--orange-mandarine) 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        text-align: center;
+        box-shadow: 0 4px 12px rgba(233, 75, 90, 0.3);
+    }
+
+    .page-header h1 {
+        margin: 0;
+        font-size: 2rem;
+        font-weight: 300;
+    }
+
+    .form-card {
+        background: white;
+        border-radius: 12px;
+        padding: 30px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .vetement-preview {
+        display: flex;
+        gap: 20px;
+        align-items: center;
+        padding: 20px;
+        background: var(--gris-clair);
+        border-radius: 8px;
+        margin-bottom: 30px;
+    }
+
+    .vetement-image {
+        width: 100px;
+        height: 100px;
+        border-radius: 8px;
+        background: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+    }
+
+    .vetement-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .vetement-info h3 {
+        margin: 0 0 8px 0;
+        color: var(--gris-chaud);
+    }
+
+    .vetement-info p {
+        margin: 0;
+        color: #999;
+        font-size: 0.9rem;
+    }
+
+    .form-group {
+        margin-bottom: 25px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        color: var(--gris-chaud);
+        font-weight: 600;
+        font-size: 1rem;
+    }
+
+    .form-group label .required {
+        color: var(--rouge-corail);
+    }
+
+    .form-group input[type="number"],
+    .form-group textarea {
+        width: 100%;
+        padding: 12px;
+        border: 2px solid var(--gris-clair);
+        border-radius: 8px;
+        font-size: 1rem;
+        font-family: inherit;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus {
+        outline: none;
+        border-color: var(--rouge-corail);
+    }
+
+    .form-group textarea {
+        min-height: 100px;
+        resize: vertical;
+    }
+
+    .checkbox-group {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px;
+        background: var(--gris-clair);
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+
+    .checkbox-group:hover {
+        background: #e8e6e3;
+    }
+
+    .checkbox-group input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
+        cursor: pointer;
+    }
+
+    .checkbox-group label {
+        margin: 0;
+        cursor: pointer;
+        flex: 1;
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 15px;
+        justify-content: flex-end;
+        margin-top: 30px;
+        padding-top: 20px;
+        border-top: 2px solid var(--gris-clair);
+    }
+
+    .btn {
+        padding: 12px 25px;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s;
+        font-size: 1rem;
+    }
+
+    .btn-primary {
+        background: var(--rouge-corail);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: var(--orange-mandarine);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(233, 75, 90, 0.3);
+    }
+
+    .btn-secondary {
+        background: var(--gris-clair);
+        color: var(--gris-chaud);
+    }
+
+    .btn-secondary:hover {
+        background: var(--gris-chaud);
+        color: white;
+    }
+
+    .help-text {
+        font-size: 0.85rem;
+        color: #999;
+        margin-top: 5px;
+    }
+</style>
+
+<div class="creer-annonce-container">
+    <div class="page-header">
+        <h1>Créer une annonce de vente</h1>
+    </div>
+
+    <div class="form-card">
+        <div class="vetement-preview">
+            <div class="vetement-image {% if not vetement.image %}no-image{% endif %}">
+                {% if vetement.image %}
+                <img src="{{ vetement.image.url }}" alt="{{ vetement.nom }}">
+                {% else %}
+                <i class="material-icons" style="font-size: 50px; color: var(--rouge-corail);">checkroom</i>
+                {% endif %}
+            </div>
+            <div class="vetement-info">
+                <h3>{{ vetement.nom }}</h3>
+                <p>{{ vetement.categorie.nom }} - {{ vetement.couleur.nom }}</p>
+                {% if vetement.marque %}
+                <p>Marque: {{ vetement.marque }}</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <form method="post">
+            {% csrf_token %}
+
+            <div class="form-group">
+                <label for="prix_vente">
+                    Prix de vente <span class="required">*</span>
+                </label>
+                <input type="number" id="prix_vente" name="prix_vente" step="0.01" min="0.01" required
+                       placeholder="0.00" value="{{ vetement.prix_achat|default:'' }}">
+                <div class="help-text">Prix en euros (€)</div>
+            </div>
+
+            <div class="form-group">
+                <label for="description_vente">
+                    Description de l'annonce
+                </label>
+                <textarea id="description_vente" name="description_vente"
+                          placeholder="Décrivez l'état du vêtement, les raisons de la vente, etc."></textarea>
+                <div class="help-text">Cette description s'ajoute aux informations du vêtement</div>
+            </div>
+
+            <div class="form-group">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="negociable" name="negociable" checked>
+                    <label for="negociable">
+                        <strong>Prix négociable</strong>
+                        <div class="help-text" style="margin-top: 4px;">Les acheteurs pourront vous proposer un autre prix</div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="checkbox-group">
+                    <input type="checkbox" id="livraison_possible" name="livraison_possible">
+                    <label for="livraison_possible">
+                        <strong>Livraison possible</strong>
+                        <div class="help-text" style="margin-top: 4px;">Vous acceptez d'envoyer le vêtement par la poste</div>
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <a href="{% url 'vetements:marketplace_mes_annonces' %}" class="btn btn-secondary">
+                    <i class="material-icons">cancel</i>
+                    Annuler
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="material-icons">publish</i>
+                    Publier l'annonce
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
