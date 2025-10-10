@@ -8,7 +8,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth.models import User
 from django.contrib import messages
-from .models import Vetement, Categorie, Tenue, Valise, Message
+from .models import Vetement, Categorie, Tenue, Valise, Message, Amitie, AnnonceVente
 
 # Create your views here.
 
@@ -499,3 +499,104 @@ def message_delete(request, pk):
 
     messages.success(request, "Message archivé.")
     return redirect('vetements:messages_inbox')
+
+
+# Widget Fring - Création rapide de tenues
+@login_required
+def fring_widget(request):
+    """Widget Fring pour créer rapidement des tenues"""
+    if request.method == 'POST':
+        # Récupérer les IDs des vêtements sélectionnés
+        haut_id = request.POST.get('haut')
+        bas_id = request.POST.get('bas')
+        chaussures_id = request.POST.get('chaussures')
+        nom_tenue = request.POST.get('nom_tenue', 'Ma tenue')
+
+        # Vérifier qu'au moins les 3 éléments sont sélectionnés
+        if haut_id and bas_id and chaussures_id:
+            try:
+                # Récupérer les vêtements (peut être de l'utilisateur, d'un ami ou en vente)
+                haut = Vetement.objects.get(pk=haut_id)
+                bas = Vetement.objects.get(pk=bas_id)
+                chaussures = Vetement.objects.get(pk=chaussures_id)
+
+                # Créer la tenue avec uniquement les vêtements de l'utilisateur
+                # Pour les vêtements d'amis ou en vente, on les note dans la description
+                tenue = Tenue.objects.create(
+                    nom=nom_tenue,
+                    proprietaire=request.user,
+                    occasion='decontracte',
+                    saison='toutes'
+                )
+
+                # Ajouter seulement les vêtements qui appartiennent à l'utilisateur
+                if haut.proprietaire == request.user:
+                    tenue.vetements.add(haut)
+                if bas.proprietaire == request.user:
+                    tenue.vetements.add(bas)
+                if chaussures.proprietaire == request.user:
+                    tenue.vetements.add(chaussures)
+
+                tenue.save()
+
+                messages.success(request, f"Tenue '{nom_tenue}' créée avec succès!")
+                return redirect('vetements:tenue_detail', pk=tenue.pk)
+
+            except Vetement.DoesNotExist:
+                messages.error(request, "Un ou plusieurs vêtements n'existent pas.")
+        else:
+            messages.error(request, "Veuillez sélectionner au moins un haut, un bas et une paire de chaussures.")
+
+    # Récupérer les IDs des amis acceptés
+    amities_acceptees = Amitie.objects.filter(
+        Q(demandeur=request.user, statut='acceptee') |
+        Q(destinataire=request.user, statut='acceptee')
+    )
+
+    amis_ids = set()
+    for amitie in amities_acceptees:
+        if amitie.demandeur == request.user:
+            amis_ids.add(amitie.destinataire.id)
+        else:
+            amis_ids.add(amitie.demandeur.id)
+
+    # Récupérer tous les vêtements : propres + amis + en vente
+    # 1. Mes propres vêtements
+    mes_vetements = Vetement.objects.filter(proprietaire=request.user)
+
+    # 2. Vêtements des amis
+    vetements_amis = Vetement.objects.filter(proprietaire__id__in=amis_ids)
+
+    # 3. Vêtements en vente
+    annonces_disponibles = AnnonceVente.objects.filter(statut='en_vente')
+    vetements_en_vente = Vetement.objects.filter(
+        id__in=annonces_disponibles.values_list('vetement_id', flat=True)
+    ).exclude(proprietaire=request.user)  # Exclure mes propres vêtements en vente
+
+    # Combiner tous les vêtements
+    tous_vetements = mes_vetements | vetements_amis | vetements_en_vente
+    tous_vetements = tous_vetements.distinct()
+
+    # Filtrer par catégorie (insensible à la casse)
+    # Hauts
+    hauts = tous_vetements.filter(
+        categorie__nom__iregex=r'^(t-shirt|chemise|pull|sweat|veste|manteau|top|chemisier|polo|débardeur|gilet|cardigan|blouson)$'
+    ).order_by('-date_ajout')
+
+    # Bas
+    bas = tous_vetements.filter(
+        categorie__nom__iregex=r'^(pantalon|jean|short|jupe|legging|jogging|bermuda)$'
+    ).order_by('-date_ajout')
+
+    # Chaussures
+    chaussures = tous_vetements.filter(
+        categorie__nom__iregex=r'^(chaussure|basket|botte|sandale|escarpin|mocassin|sneaker|tong|ballerine|derby|chaussures)$'
+    ).order_by('-date_ajout')
+
+    context = {
+        'hauts': hauts,
+        'bas': bas,
+        'chaussures': chaussures,
+        'user': request.user,
+    }
+    return render(request, 'vetements/fring_widget.html', context)

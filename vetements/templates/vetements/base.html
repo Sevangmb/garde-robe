@@ -155,6 +155,11 @@
                         <i class="material-icons">style</i>
                     </a>
                 </li>
+                <li class="{% if request.resolver_match.url_name == 'fring_widget' %}active{% endif %}">
+                    <a href="{% url 'vetements:fring_widget' %}" class="waves-effect tooltipped" data-position="bottom" data-tooltip="Fring - Créer une tenue">
+                        <i class="material-icons">auto_awesome</i>
+                    </a>
+                </li>
                 <li class="{% if 'valise' in request.resolver_match.url_name %}active{% endif %}">
                     <a href="{% url 'vetements:valises_list' %}" class="waves-effect tooltipped" data-position="bottom" data-tooltip="Valises">
                         <i class="material-icons">luggage</i>
@@ -236,6 +241,11 @@
         <li class="{% if 'tenue' in request.resolver_match.url_name %}active{% endif %}">
             <a href="{% url 'vetements:tenues_list' %}" class="waves-effect">
                 <i class="material-icons purple-text" style="color: #E94B5A;">style</i>Tenues
+            </a>
+        </li>
+        <li class="{% if request.resolver_match.url_name == 'fring_widget' %}active{% endif %}">
+            <a href="{% url 'vetements:fring_widget' %}" class="waves-effect">
+                <i class="material-icons" style="color: #F5D987;">auto_awesome</i>Fring - Créer une tenue
             </a>
         </li>
         <li class="{% if 'valise' in request.resolver_match.url_name %}active{% endif %}">

@@ -315,3 +315,65 @@ class Message(models.Model):
             self.lu = True
             self.date_lecture = timezone.now()
             self.save()
+
+
+class Amitie(models.Model):
+    """Relation d'amitié entre utilisateurs"""
+    STATUT_CHOICES = [
+        ('en_attente', 'En attente'),
+        ('acceptee', 'Acceptée'),
+        ('refusee', 'Refusée'),
+    ]
+
+    demandeur = models.ForeignKey(User, on_delete=models.CASCADE, related_name='demandes_amitie_envoyees', verbose_name="Demandeur")
+    destinataire = models.ForeignKey(User, on_delete=models.CASCADE, related_name='demandes_amitie_recues', verbose_name="Destinataire")
+    statut = models.CharField(max_length=20, choices=STATUT_CHOICES, default='en_attente', verbose_name="Statut")
+    date_demande = models.DateTimeField(auto_now_add=True, verbose_name="Date de la demande")
+    date_reponse = models.DateTimeField(null=True, blank=True, verbose_name="Date de réponse")
+
+    class Meta:
+        verbose_name = "Amitié"
+        verbose_name_plural = "Amitiés"
+        unique_together = ['demandeur', 'destinataire']
+        ordering = ['-date_demande']
+
+    def __str__(self):
+        return f"{self.demandeur.username} → {self.destinataire.username} ({self.get_statut_display()})"
+
+
+class AnnonceVente(models.Model):
+    """Annonce de vente d'un vêtement"""
+    STATUT_CHOICES = [
+        ('en_vente', 'En vente'),
+        ('reservee', 'Réservée'),
+        ('vendue', 'Vendue'),
+        ('retiree', 'Retirée'),
+    ]
+
+    vetement = models.OneToOneField(Vetement, on_delete=models.CASCADE, related_name='annonce_vente', verbose_name="Vêtement")
+    vendeur = models.ForeignKey(User, on_delete=models.CASCADE, related_name='annonces_vente', verbose_name="Vendeur")
+
+    prix_vente = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)], verbose_name="Prix de vente (€)")
+    description_vente = models.TextField(blank=True, verbose_name="Description pour la vente", help_text="Informations supplémentaires pour l'acheteur")
+
+    statut = models.CharField(max_length=20, choices=STATUT_CHOICES, default='en_vente', verbose_name="Statut")
+    acheteur = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='achats', verbose_name="Acheteur")
+
+    date_publication = models.DateTimeField(auto_now_add=True, verbose_name="Date de publication")
+    date_vente = models.DateTimeField(null=True, blank=True, verbose_name="Date de vente")
+
+    negociable = models.BooleanField(default=True, verbose_name="Prix négociable")
+    livraison_possible = models.BooleanField(default=False, verbose_name="Livraison possible")
+
+    class Meta:
+        verbose_name = "Annonce de vente"
+        verbose_name_plural = "Annonces de vente"
+        ordering = ['-date_publication']
+
+    def __str__(self):
+        return f"{self.vetement.nom} - {self.prix_vente}€ ({self.get_statut_display()})"
+
+    @property
+    def est_disponible(self):
+        """Vérifie si l'annonce est disponible à l'achat"""
+        return self.statut == 'en_vente'

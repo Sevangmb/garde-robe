@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.db.models import Q
-from .models import Categorie, Couleur, Taille, Vetement, Tenue, Valise, Message
+from .models import Categorie, Couleur, Taille, Vetement, Tenue, Valise, Message, Amitie, AnnonceVente
 
 
 # Personnalisation du site admin pour restreindre l'accès
@@ -352,3 +352,111 @@ class MessageAdmin(admin.ModelAdmin):
         queryset.update(archive_expediteur=True, archive_destinataire=True)
         self.message_user(request, f"{queryset.count()} message(s) archivé(s).")
     archiver.short_description = "Archiver"
+
+
+@admin.register(Amitie, site=restricted_admin_site)
+class AmitieAdmin(admin.ModelAdmin):
+    list_display = ['demandeur', 'destinataire', 'statut', 'date_demande', 'date_reponse']
+    list_filter = ['statut', 'date_demande']
+    search_fields = ['demandeur__username', 'destinataire__username']
+    readonly_fields = ['date_demande', 'date_reponse']
+    date_hierarchy = 'date_demande'
+
+    fieldsets = (
+        ('Participants', {
+            'fields': ('demandeur', 'destinataire')
+        }),
+        ('Statut', {
+            'fields': ('statut', 'date_demande', 'date_reponse')
+        }),
+    )
+
+    def get_queryset(self, request):
+        """Filtrer les amitiés: superuser voit tout, utilisateur normal voit ses relations"""
+        qs = super().get_queryset(request)
+        if request.user.is_superuser:
+            return qs
+        return qs.filter(Q(demandeur=request.user) | Q(destinataire=request.user))
+
+    actions = ['accepter_demande', 'refuser_demande']
+
+    def accepter_demande(self, request, queryset):
+        from django.utils import timezone
+        for amitie in queryset.filter(statut='en_attente'):
+            amitie.statut = 'acceptee'
+            amitie.date_reponse = timezone.now()
+            amitie.save()
+        self.message_user(request, f"{queryset.filter(statut='acceptee').count()} demande(s) acceptée(s).")
+    accepter_demande.short_description = "Accepter la demande d'amitié"
+
+    def refuser_demande(self, request, queryset):
+        from django.utils import timezone
+        for amitie in queryset.filter(statut='en_attente'):
+            amitie.statut = 'refusee'
+            amitie.date_reponse = timezone.now()
+            amitie.save()
+        self.message_user(request, f"{queryset.filter(statut='refusee').count()} demande(s) refusée(s).")
+    refuser_demande.short_description = "Refuser la demande d'amitié"
+
+
+@admin.register(AnnonceVente, site=restricted_admin_site)
+class AnnonceVenteAdmin(admin.ModelAdmin):
+    list_display = ['vetement', 'vendeur', 'prix_vente', 'statut', 'negociable', 'livraison_possible', 'date_publication']
+    list_filter = ['statut', 'negociable', 'livraison_possible', 'date_publication']
+    search_fields = ['vetement__nom', 'vendeur__username', 'description_vente']
+    readonly_fields = ['date_publication', 'date_vente']
+    date_hierarchy = 'date_publication'
+
+    fieldsets = (
+        ('Vêtement', {
+            'fields': ('vetement', 'vendeur')
+        }),
+        ('Prix et conditions', {
+            'fields': ('prix_vente', 'negociable', 'livraison_possible', 'description_vente')
+        }),
+        ('Statut de vente', {
+            'fields': ('statut', 'acheteur', 'date_publication', 'date_vente')
+        }),
+    )
+
+    def get_queryset(self, request):
+        """Filtrer les annonces: superuser voit tout, utilisateur normal voit ses annonces ou les annonces disponibles"""
+        qs = super().get_queryset(request)
+        if request.user.is_superuser:
+            return qs
+        # L'utilisateur voit ses propres annonces ou les annonces en vente
+        return qs.filter(Q(vendeur=request.user) | Q(statut='en_vente'))
+
+    def save_model(self, request, obj, form, change):
+        """Attribuer automatiquement l'utilisateur connecté comme vendeur"""
+        if not change:
+            obj.vendeur = request.user
+        super().save_model(request, obj, form, change)
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        """Limiter les vêtements disponibles à ceux de l'utilisateur pour le champ vetement"""
+        if db_field.name == "vetement":
+            if not request.user.is_superuser:
+                kwargs["queryset"] = Vetement.objects.filter(proprietaire=request.user)
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+    actions = ['marquer_reservee', 'marquer_vendue', 'marquer_retiree']
+
+    def marquer_reservee(self, request, queryset):
+        queryset.filter(statut='en_vente').update(statut='reservee')
+        self.message_user(request, f"{queryset.filter(statut='reservee').count()} annonce(s) marquée(s) comme réservée(s).")
+    marquer_reservee.short_description = "Marquer comme réservée"
+
+    def marquer_vendue(self, request, queryset):
+        from django.utils import timezone
+        for annonce in queryset.filter(statut__in=['en_vente', 'reservee']):
+            annonce.statut = 'vendue'
+            annonce.date_vente = timezone.now()
+            annonce.save()
+        self.message_user(request, f"{queryset.filter(statut='vendue').count()} annonce(s) marquée(s) comme vendue(s).")
+    marquer_vendue.short_description = "Marquer comme vendue"
+
+    def marquer_retiree(self, request, queryset):
+        queryset.update(statut='retiree')
+        self.message_user(request, f"{queryset.filter(statut='retiree').count()} annonce(s) retirée(s) de la vente.")
+    marquer_retiree.short_description = "Retirer de la vente"

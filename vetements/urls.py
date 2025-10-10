@@ -18,6 +18,7 @@ urlpatterns = [
     path('entretien/', views.entretien, name='entretien'),
     path('tenues/', views.tenues_list, name='tenues_list'),
     path('tenues/<int:pk>/', views.tenue_detail, name='tenue_detail'),
+    path('fring/', views.fring_widget, name='fring_widget'),
     path('valises/', views.valises_list, name='valises_list'),
     path('valises/<int:pk>/', views.valise_detail, name='valise_detail'),
     path('statistiques/', views.statistiques, name='statistiques'),

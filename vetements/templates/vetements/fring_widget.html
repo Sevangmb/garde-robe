@@ -1,0 +1,761 @@
+{% extends 'vetements/base.html' %}
+
+{% block title %}Fring - Créer une tenue - Ma Garde-Robe{% endblock %}
+
+{% block content %}
+<style>
+    :root {
+        --mauve-rose: #B09199;
+        --rouge-corail: #E94B5A;
+        --jaune-pastel: #F5D987;
+        --orange-mandarine: #E8874F;
+        --violet-mauve: #8C7A9E;
+        --beige-clair: #FDFBF7;
+        --gris-chaud: #6B6560;
+        --gris-clair: #F5F3F0;
+    }
+
+    body {
+        background: var(--beige-clair);
+        overflow-x: hidden;
+    }
+
+    .fring-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .fring-header {
+        background: linear-gradient(135deg, var(--mauve-rose) 0%, var(--violet-mauve) 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        text-align: center;
+        box-shadow: 0 4px 12px rgba(176, 145, 153, 0.3);
+    }
+
+    .fring-header h1 {
+        margin: 0 0 10px 0;
+        font-size: 2rem;
+        font-weight: 300;
+    }
+
+    .fring-header p {
+        margin: 0;
+        opacity: 0.9;
+        font-size: 1.1rem;
+    }
+
+    .save-section {
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        display: flex;
+        gap: 15px;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .save-section input {
+        flex: 1;
+        padding: 12px 15px;
+        border: 2px solid var(--gris-clair);
+        border-radius: 8px;
+        font-size: 1rem;
+        transition: border-color 0.3s;
+    }
+
+    .save-section input:focus {
+        outline: none;
+        border-color: var(--mauve-rose);
+    }
+
+    .save-section button {
+        background: var(--mauve-rose);
+        color: white;
+        border: none;
+        padding: 12px 30px;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        white-space: nowrap;
+    }
+
+    .save-section button:hover {
+        background: var(--violet-mauve);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(140, 122, 158, 0.3);
+    }
+
+    .save-section button:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    .selection-status {
+        font-size: 0.9rem;
+        color: var(--gris-chaud);
+    }
+
+    .selection-status.complete {
+        color: var(--mauve-rose);
+        font-weight: 600;
+    }
+
+    .fring-band {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 15px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .band-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid var(--gris-clair);
+    }
+
+    .band-header h3 {
+        margin: 0;
+        font-size: 1.3rem;
+        color: var(--gris-chaud);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .band-header.haut {
+        border-bottom-color: var(--mauve-rose);
+    }
+
+    .band-header.bas {
+        border-bottom-color: var(--violet-mauve);
+    }
+
+    .band-header.chaussures {
+        border-bottom-color: var(--orange-mandarine);
+    }
+
+    .band-label {
+        background: var(--mauve-rose);
+        color: white;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .band-label.bas {
+        background: var(--violet-mauve);
+    }
+
+    .band-label.chaussures {
+        background: var(--orange-mandarine);
+    }
+
+    .scroll-container {
+        position: relative;
+        overflow: hidden;
+    }
+
+    .carousel-container {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 20px;
+        padding: 20px;
+    }
+
+    .carousel-btn {
+        background: white;
+        border: 2px solid var(--mauve-rose);
+        color: var(--mauve-rose);
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s;
+        flex-shrink: 0;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .carousel-btn:hover {
+        background: var(--mauve-rose);
+        color: white;
+        transform: scale(1.1);
+        box-shadow: 0 4px 12px rgba(176, 145, 153, 0.3);
+    }
+
+    .carousel-btn:disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    .carousel-btn.bas-btn {
+        border-color: var(--violet-mauve);
+        color: var(--violet-mauve);
+    }
+
+    .carousel-btn.bas-btn:hover {
+        background: var(--violet-mauve);
+        color: white;
+    }
+
+    .carousel-btn.chaussures-btn {
+        border-color: var(--orange-mandarine);
+        color: var(--orange-mandarine);
+    }
+
+    .carousel-btn.chaussures-btn:hover {
+        background: var(--orange-mandarine);
+        color: white;
+    }
+
+    .item-display {
+        flex: 1;
+        max-width: 500px;
+        background: white;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        border: 3px solid var(--mauve-rose);
+    }
+
+    .item-display.bas-display {
+        border-color: var(--violet-mauve);
+    }
+
+    .item-display.chaussures-display {
+        border-color: var(--orange-mandarine);
+    }
+
+    .item-image {
+        width: 100%;
+        height: 300px;
+        background: var(--beige-clair);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        position: relative;
+    }
+
+    .item-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .item-image.no-image {
+        background: linear-gradient(135deg, rgba(176, 145, 153, 0.1) 0%, rgba(140, 122, 158, 0.1) 100%);
+        color: var(--gris-chaud);
+    }
+
+    .item-info {
+        padding: 20px;
+        text-align: center;
+        background: white;
+    }
+
+    .item-info h4 {
+        margin: 0 0 8px 0;
+        font-size: 1.3rem;
+        color: var(--gris-chaud);
+    }
+
+    .item-counter {
+        font-size: 0.9rem;
+        color: var(--mauve-rose);
+        font-weight: 600;
+    }
+
+    .item-badges {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+        margin-top: 10px;
+        flex-wrap: wrap;
+    }
+
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .badge.mon-vetement {
+        background: rgba(176, 145, 153, 0.15);
+        color: var(--mauve-rose);
+        border: 1px solid var(--mauve-rose);
+    }
+
+    .badge.ami {
+        background: rgba(140, 122, 158, 0.15);
+        color: var(--violet-mauve);
+        border: 1px solid var(--violet-mauve);
+    }
+
+    .badge.en-vente {
+        background: rgba(233, 75, 90, 0.15);
+        color: var(--rouge-corail);
+        border: 1px solid var(--rouge-corail);
+    }
+
+    .badge i {
+        font-size: 14px;
+    }
+
+    .proprietaire-info {
+        font-size: 0.85rem;
+        color: var(--gris-chaud);
+        margin-top: 5px;
+        font-style: italic;
+    }
+
+    .empty-message {
+        text-align: center;
+        padding: 40px;
+        color: var(--gris-chaud);
+        font-size: 1rem;
+    }
+
+    .empty-message i {
+        font-size: 48px;
+        color: var(--mauve-rose);
+        margin-bottom: 15px;
+    }
+
+    .back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: var(--mauve-rose);
+        text-decoration: none;
+        font-weight: 500;
+        margin-bottom: 20px;
+        transition: color 0.3s;
+    }
+
+    .back-link:hover {
+        color: var(--violet-mauve);
+    }
+
+    @media (max-width: 768px) {
+        .fring-header h1 {
+            font-size: 1.5rem;
+        }
+
+        .save-section {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .save-section button {
+            justify-content: center;
+        }
+
+        .item-card {
+            min-width: 150px;
+            width: 150px;
+        }
+
+        .item-image {
+            height: 160px;
+        }
+    }
+</style>
+
+<div class="fring-container">
+    <a href="{% url 'vetements:tenues_list' %}" class="back-link">
+        <i class="material-icons">arrow_back</i>
+        Retour aux tenues
+    </a>
+
+    <div class="fring-header">
+        <h1><i class="material-icons" style="vertical-align: middle; margin-right: 10px; font-size: 2rem;">auto_awesome</i>Fring - Créateur de tenues</h1>
+        <p>Sélectionnez un haut, un bas et des chaussures pour créer votre tenue</p>
+    </div>
+
+    <form method="post" id="fringForm">
+        {% csrf_token %}
+        <input type="hidden" name="haut" id="selected_haut">
+        <input type="hidden" name="bas" id="selected_bas">
+        <input type="hidden" name="chaussures" id="selected_chaussures">
+
+        <div class="save-section">
+            <input type="text" name="nom_tenue" placeholder="Nom de la tenue..." value="Ma nouvelle tenue" required>
+            <span class="selection-status" id="selectionStatus">Sélectionnez 3 éléments</span>
+            <button type="submit" id="saveBtn" disabled>
+                <i class="material-icons">save</i>
+                Enregistrer la tenue
+            </button>
+        </div>
+
+        <!-- Bande Hauts -->
+        <div class="fring-band">
+            <div class="band-header haut">
+                <span class="band-label">Haut</span>
+                <h3><i class="material-icons">checkroom</i>Hauts</h3>
+            </div>
+            {% if hauts %}
+            <div class="carousel-container">
+                <button type="button" class="carousel-btn" onclick="navigateHaut(-1)" id="hautPrev">
+                    <i class="material-icons">chevron_left</i>
+                </button>
+
+                <div class="item-display" id="hautDisplay">
+                    <div class="item-image">
+                        <img id="hautImg" src="" alt="">
+                    </div>
+                    <div class="item-info">
+                        <h4 id="hautNom"></h4>
+                        <div class="item-counter" id="hautCounter"></div>
+                        <div class="item-badges" id="hautBadges"></div>
+                        <div class="proprietaire-info" id="hautProprietaire"></div>
+                    </div>
+                </div>
+
+                <button type="button" class="carousel-btn" onclick="navigateHaut(1)" id="hautNext">
+                    <i class="material-icons">chevron_right</i>
+                </button>
+            </div>
+            {% else %}
+            <div class="empty-message">
+                <i class="material-icons">checkroom</i>
+                <p>Aucun haut disponible.</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Bande Bas -->
+        <div class="fring-band">
+            <div class="band-header bas">
+                <span class="band-label bas">Bas</span>
+                <h3><i class="material-icons">accessibility</i>Bas</h3>
+            </div>
+            {% if bas %}
+            <div class="carousel-container">
+                <button type="button" class="carousel-btn bas-btn" onclick="navigateBas(-1)" id="basPrev">
+                    <i class="material-icons">chevron_left</i>
+                </button>
+
+                <div class="item-display bas-display" id="basDisplay">
+                    <div class="item-image">
+                        <img id="basImg" src="" alt="">
+                    </div>
+                    <div class="item-info">
+                        <h4 id="basNom"></h4>
+                        <div class="item-counter" id="basCounter"></div>
+                        <div class="item-badges" id="basBadges"></div>
+                        <div class="proprietaire-info" id="basProprietaire"></div>
+                    </div>
+                </div>
+
+                <button type="button" class="carousel-btn bas-btn" onclick="navigateBas(1)" id="basNext">
+                    <i class="material-icons">chevron_right</i>
+                </button>
+            </div>
+            {% else %}
+            <div class="empty-message">
+                <i class="material-icons">accessibility</i>
+                <p>Aucun bas disponible.</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Bande Chaussures -->
+        <div class="fring-band">
+            <div class="band-header chaussures">
+                <span class="band-label chaussures">Chaussures</span>
+                <h3><i class="material-icons">shopping_bag</i>Chaussures</h3>
+            </div>
+            {% if chaussures %}
+            <div class="carousel-container">
+                <button type="button" class="carousel-btn chaussures-btn" onclick="navigateChaussures(-1)" id="chaussuresPrev">
+                    <i class="material-icons">chevron_left</i>
+                </button>
+
+                <div class="item-display chaussures-display" id="chaussuresDisplay">
+                    <div class="item-image">
+                        <img id="chaussuresImg" src="" alt="">
+                    </div>
+                    <div class="item-info">
+                        <h4 id="chaussuresNom"></h4>
+                        <div class="item-counter" id="chaussuresCounter"></div>
+                        <div class="item-badges" id="chaussuresBadges"></div>
+                        <div class="proprietaire-info" id="chaussuresProprietaire"></div>
+                    </div>
+                </div>
+
+                <button type="button" class="carousel-btn chaussures-btn" onclick="navigateChaussures(1)" id="chaussuresNext">
+                    <i class="material-icons">chevron_right</i>
+                </button>
+            </div>
+            {% else %}
+            <div class="empty-message">
+                <i class="material-icons">shopping_bag</i>
+                <p>Aucune chaussure disponible.</p>
+            </div>
+            {% endif %}
+        </div>
+    </form>
+</div>
+
+<script>
+    // Données des vêtements
+    const currentUserId = {{ user.id }};
+
+    const hautsData = [
+        {% for v in hauts %}
+        {
+            id: {{ v.id }},
+            nom: "{{ v.nom|escapejs }}",
+            image: {% if v.image %}"{{ v.image.url }}"{% else %}null{% endif %},
+            proprietaireId: {{ v.proprietaire.id }},
+            proprietaireNom: "{{ v.proprietaire.username|escapejs }}",
+            enVente: {% if v.annonce_vente %}true{% else %}false{% endif %},
+            prixVente: {% if v.annonce_vente %}"{{ v.annonce_vente.prix_vente }}"{% else %}null{% endif %}
+        }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ];
+
+    const basData = [
+        {% for v in bas %}
+        {
+            id: {{ v.id }},
+            nom: "{{ v.nom|escapejs }}",
+            image: {% if v.image %}"{{ v.image.url }}"{% else %}null{% endif %},
+            proprietaireId: {{ v.proprietaire.id }},
+            proprietaireNom: "{{ v.proprietaire.username|escapejs }}",
+            enVente: {% if v.annonce_vente %}true{% else %}false{% endif %},
+            prixVente: {% if v.annonce_vente %}"{{ v.annonce_vente.prix_vente }}"{% else %}null{% endif %}
+        }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ];
+
+    const chaussuresData = [
+        {% for v in chaussures %}
+        {
+            id: {{ v.id }},
+            nom: "{{ v.nom|escapejs }}",
+            image: {% if v.image %}"{{ v.image.url }}"{% else %}null{% endif %},
+            proprietaireId: {{ v.proprietaire.id }},
+            proprietaireNom: "{{ v.proprietaire.username|escapejs }}",
+            enVente: {% if v.annonce_vente %}true{% else %}false{% endif %},
+            prixVente: {% if v.annonce_vente %}"{{ v.annonce_vente.prix_vente }}"{% else %}null{% endif %}
+        }{% if not forloop.last %},{% endif %}
+        {% endfor %}
+    ];
+
+    // Index actuels
+    let hautIndex = 0;
+    let basIndex = 0;
+    let chaussuresIndex = 0;
+
+    // Navigation Hauts
+    function navigateHaut(direction) {
+        hautIndex = (hautIndex + direction + hautsData.length) % hautsData.length;
+        updateHautDisplay();
+    }
+
+    function updateHautDisplay() {
+        const item = hautsData[hautIndex];
+        document.getElementById('hautNom').textContent = item.nom;
+        document.getElementById('hautCounter').textContent = `${hautIndex + 1} / ${hautsData.length}`;
+        document.getElementById('selected_haut').value = item.id;
+
+        const img = document.getElementById('hautImg');
+        const container = img.parentElement;
+        if (item.image) {
+            img.src = item.image;
+            img.alt = item.nom;
+            img.style.display = 'block';
+            container.classList.remove('no-image');
+        } else {
+            img.style.display = 'none';
+            container.classList.add('no-image');
+            container.innerHTML = '<i class="material-icons" style="font-size: 80px; color: #B09199;">checkroom</i>';
+        }
+
+        // Afficher les badges
+        const badgesContainer = document.getElementById('hautBadges');
+        badgesContainer.innerHTML = '';
+
+        if (item.proprietaireId === currentUserId) {
+            badgesContainer.innerHTML += '<span class="badge mon-vetement"><i class="material-icons">person</i>Mon vêtement</span>';
+        } else {
+            badgesContainer.innerHTML += '<span class="badge ami"><i class="material-icons">group</i>Ami</span>';
+        }
+
+        if (item.enVente) {
+            badgesContainer.innerHTML += `<span class="badge en-vente"><i class="material-icons">sell</i>En vente ${item.prixVente}€</span>`;
+        }
+
+        // Afficher le propriétaire si ce n'est pas l'utilisateur courant
+        const proprietaireInfo = document.getElementById('hautProprietaire');
+        if (item.proprietaireId !== currentUserId) {
+            proprietaireInfo.textContent = `Propriétaire: ${item.proprietaireNom}`;
+        } else {
+            proprietaireInfo.textContent = '';
+        }
+
+        updateSaveButton();
+    }
+
+    // Navigation Bas
+    function navigateBas(direction) {
+        basIndex = (basIndex + direction + basData.length) % basData.length;
+        updateBasDisplay();
+    }
+
+    function updateBasDisplay() {
+        const item = basData[basIndex];
+        document.getElementById('basNom').textContent = item.nom;
+        document.getElementById('basCounter').textContent = `${basIndex + 1} / ${basData.length}`;
+        document.getElementById('selected_bas').value = item.id;
+
+        const img = document.getElementById('basImg');
+        const container = img.parentElement;
+        if (item.image) {
+            img.src = item.image;
+            img.alt = item.nom;
+            img.style.display = 'block';
+            container.classList.remove('no-image');
+        } else {
+            img.style.display = 'none';
+            container.classList.add('no-image');
+            container.innerHTML = '<i class="material-icons" style="font-size: 80px; color: #8C7A9E;">accessibility</i>';
+        }
+
+        // Afficher les badges
+        const badgesContainer = document.getElementById('basBadges');
+        badgesContainer.innerHTML = '';
+
+        if (item.proprietaireId === currentUserId) {
+            badgesContainer.innerHTML += '<span class="badge mon-vetement"><i class="material-icons">person</i>Mon vêtement</span>';
+        } else {
+            badgesContainer.innerHTML += '<span class="badge ami"><i class="material-icons">group</i>Ami</span>';
+        }
+
+        if (item.enVente) {
+            badgesContainer.innerHTML += `<span class="badge en-vente"><i class="material-icons">sell</i>En vente ${item.prixVente}€</span>`;
+        }
+
+        // Afficher le propriétaire si ce n'est pas l'utilisateur courant
+        const proprietaireInfo = document.getElementById('basProprietaire');
+        if (item.proprietaireId !== currentUserId) {
+            proprietaireInfo.textContent = `Propriétaire: ${item.proprietaireNom}`;
+        } else {
+            proprietaireInfo.textContent = '';
+        }
+
+        updateSaveButton();
+    }
+
+    // Navigation Chaussures
+    function navigateChaussures(direction) {
+        chaussuresIndex = (chaussuresIndex + direction + chaussuresData.length) % chaussuresData.length;
+        updateChaussuresDisplay();
+    }
+
+    function updateChaussuresDisplay() {
+        const item = chaussuresData[chaussuresIndex];
+        document.getElementById('chaussuresNom').textContent = item.nom;
+        document.getElementById('chaussuresCounter').textContent = `${chaussuresIndex + 1} / ${chaussuresData.length}`;
+        document.getElementById('selected_chaussures').value = item.id;
+
+        const img = document.getElementById('chaussuresImg');
+        const container = img.parentElement;
+        if (item.image) {
+            img.src = item.image;
+            img.alt = item.nom;
+            img.style.display = 'block';
+            container.classList.remove('no-image');
+        } else {
+            img.style.display = 'none';
+            container.classList.add('no-image');
+            container.innerHTML = '<i class="material-icons" style="font-size: 80px; color: #E8874F;">shopping_bag</i>';
+        }
+
+        // Afficher les badges
+        const badgesContainer = document.getElementById('chaussuresBadges');
+        badgesContainer.innerHTML = '';
+
+        if (item.proprietaireId === currentUserId) {
+            badgesContainer.innerHTML += '<span class="badge mon-vetement"><i class="material-icons">person</i>Mon vêtement</span>';
+        } else {
+            badgesContainer.innerHTML += '<span class="badge ami"><i class="material-icons">group</i>Ami</span>';
+        }
+
+        if (item.enVente) {
+            badgesContainer.innerHTML += `<span class="badge en-vente"><i class="material-icons">sell</i>En vente ${item.prixVente}€</span>`;
+        }
+
+        // Afficher le propriétaire si ce n'est pas l'utilisateur courant
+        const proprietaireInfo = document.getElementById('chaussuresProprietaire');
+        if (item.proprietaireId !== currentUserId) {
+            proprietaireInfo.textContent = `Propriétaire: ${item.proprietaireNom}`;
+        } else {
+            proprietaireInfo.textContent = '';
+        }
+
+        updateSaveButton();
+    }
+
+    function updateSaveButton() {
+        const saveBtn = document.getElementById('saveBtn');
+        const status = document.getElementById('selectionStatus');
+
+        const hasHaut = hautsData.length > 0;
+        const hasBas = basData.length > 0;
+        const hasChaussures = chaussuresData.length > 0;
+
+        if (hasHaut && hasBas && hasChaussures) {
+            saveBtn.disabled = false;
+            status.textContent = '✓ Tenue complète !';
+            status.classList.add('complete');
+        } else {
+            saveBtn.disabled = true;
+            let missing = [];
+            if (!hasHaut) missing.push('haut');
+            if (!hasBas) missing.push('bas');
+            if (!hasChaussures) missing.push('chaussures');
+            status.textContent = `Manque: ${missing.join(', ')}`;
+            status.classList.remove('complete');
+        }
+    }
+
+    // Initialisation
+    if (hautsData.length > 0) updateHautDisplay();
+    if (basData.length > 0) updateBasDisplay();
+    if (chaussuresData.length > 0) updateChaussuresDisplay();
+    updateSaveButton();
+</script>
+{% endblock %}
