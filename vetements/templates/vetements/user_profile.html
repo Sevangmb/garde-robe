@@ -1,0 +1,187 @@
+{% extends 'vetements/base.html' %}
+
+{% block title %}Mon Profil - Ma Garde-Robe{% endblock %}
+
+{% block content %}
+<div class="page-title">
+    <h2 class="indigo-text text-darken-2">
+        <i class="material-icons left">person</i>Mon Profil
+    </h2>
+    <p class="grey-text">Gérez vos informations personnelles</p>
+</div>
+
+<!-- Informations du compte -->
+<div class="row">
+    <div class="col s12 l8">
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title indigo-text">
+                    <i class="material-icons left">account_circle</i>Informations du compte
+                </span>
+                <form method="post">
+                    {% csrf_token %}
+
+                    <div class="input-field">
+                        <i class="material-icons prefix">person</i>
+                        <input type="text" id="username" name="username" value="{{ user.username }}" required>
+                        <label for="username" class="active">Nom d'utilisateur</label>
+                    </div>
+
+                    <div class="input-field">
+                        <i class="material-icons prefix">email</i>
+                        <input type="email" id="email" name="email" value="{{ user.email }}">
+                        <label for="email" class="active">Email</label>
+                    </div>
+
+                    <div style="margin: 30px 0;">
+                        <p class="grey-text">
+                            <i class="material-icons tiny">calendar_today</i>
+                            <strong>Membre depuis:</strong> {{ user.date_joined|date:"d F Y" }}
+                        </p>
+                    </div>
+
+                    <button type="submit" class="btn waves-effect waves-light indigo darken-2">
+                        <i class="material-icons left">save</i>Mettre à jour
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col s12 l4">
+        <div class="card {% if user.is_superuser %}red lighten-5{% else %}blue lighten-5{% endif %}">
+            <div class="card-content center">
+                <i class="material-icons large {% if user.is_superuser %}red-text{% else %}blue-text{% endif %}">
+                    {% if user.is_superuser %}admin_panel_settings{% else %}person{% endif %}
+                </i>
+                <h5 class="{% if user.is_superuser %}red-text{% else %}blue-text{% endif %}">
+                    {% if user.is_superuser %}Administrateur{% else %}Utilisateur{% endif %}
+                </h5>
+                <p class="grey-text text-darken-2">
+                    {% if user.is_superuser %}
+                    Vous avez accès à toutes les fonctionnalités et pouvez gérer tous les utilisateurs
+                    {% else %}
+                    Vous ne pouvez gérer que votre propre garde-robe
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Mes Statistiques -->
+<div class="row">
+    <div class="col s12">
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title indigo-text">
+                    <i class="material-icons left">bar_chart</i>Mes Statistiques
+                </span>
+                <div class="row" style="margin-top: 20px;">
+                    <div class="col s12 m6 l4">
+                        <div class="card-panel indigo lighten-5 center hoverable">
+                            <i class="material-icons medium indigo-text">checkroom</i>
+                            <h4 class="indigo-text">{{ nb_vetements }}</h4>
+                            <p class="grey-text">Vêtements</p>
+                            <a href="{% url 'vetements:liste_vetements' %}" class="btn-small waves-effect waves-light indigo darken-2">
+                                <i class="material-icons left tiny">visibility</i>Voir
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col s12 m6 l4">
+                        <div class="card-panel purple lighten-5 center hoverable">
+                            <i class="material-icons medium purple-text">style</i>
+                            <h4 class="purple-text">{{ nb_tenues }}</h4>
+                            <p class="grey-text">Tenues</p>
+                            <a href="{% url 'vetements:tenues_list' %}" class="btn-small waves-effect waves-light purple">
+                                <i class="material-icons left tiny">visibility</i>Voir
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col s12 m6 l4">
+                        <div class="card-panel orange lighten-5 center hoverable">
+                            <i class="material-icons medium orange-text">luggage</i>
+                            <h4 class="orange-text">{{ nb_valises }}</h4>
+                            <p class="grey-text">Valises</p>
+                            <a href="{% url 'vetements:valises_list' %}" class="btn-small waves-effect waves-light orange">
+                                <i class="material-icons left tiny">visibility</i>Voir
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col s12 m6 l6">
+                        <div class="card-panel blue lighten-5 center hoverable">
+                            <i class="material-icons medium blue-text">mail</i>
+                            <h4 class="blue-text">{{ nb_messages_recus }}</h4>
+                            <p class="grey-text">Messages reçus</p>
+                            <a href="{% url 'vetements:messages_inbox' %}" class="btn-small waves-effect waves-light blue">
+                                <i class="material-icons left tiny">visibility</i>Voir
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col s12 m6 l6">
+                        <div class="card-panel green lighten-5 center hoverable">
+                            <i class="material-icons medium green-text">send</i>
+                            <h4 class="green-text">{{ nb_messages_envoyes }}</h4>
+                            <p class="grey-text">Messages envoyés</p>
+                            <a href="{% url 'vetements:messages_sent' %}" class="btn-small waves-effect waves-light green">
+                                <i class="material-icons left tiny">visibility</i>Voir
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Gestion Administrateur -->
+{% if user.is_superuser %}
+<div class="row">
+    <div class="col s12">
+        <div class="card red lighten-5">
+            <div class="card-content">
+                <span class="card-title red-text">
+                    <i class="material-icons left">admin_panel_settings</i>Gestion Administrateur
+                </span>
+                <p class="grey-text text-darken-2">En tant qu'administrateur, vous avez accès à:</p>
+                <ul class="collection" style="margin-top: 20px;">
+                    <li class="collection-item">
+                        <i class="material-icons left red-text">check</i>
+                        Gestion de tous les utilisateurs
+                    </li>
+                    <li class="collection-item">
+                        <i class="material-icons left red-text">check</i>
+                        Accès à toutes les garde-robes
+                    </li>
+                    <li class="collection-item">
+                        <i class="material-icons left red-text">check</i>
+                        Configuration des catégories, couleurs et tailles
+                    </li>
+                    <li class="collection-item">
+                        <i class="material-icons left red-text">check</i>
+                        Gestion globale des messages
+                    </li>
+                </ul>
+                <div style="margin-top: 20px;">
+                    <a href="/admin/" class="btn waves-effect waves-light red">
+                        <i class="material-icons left">admin_panel_settings</i>Accéder à l'administration
+                    </a>
+                    <a href="/admin/auth/user/" class="btn waves-effect waves-light purple">
+                        <i class="material-icons left">people</i>Gérer les utilisateurs
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- Actions -->
+<div class="row">
+    <div class="col s12 center">
+        <a href="{% url 'vetements:accueil' %}" class="btn waves-effect waves-light grey">
+            <i class="material-icons left">arrow_back</i>Retour au tableau de bord
+        </a>
+    </div>
+</div>
+{% endblock %}

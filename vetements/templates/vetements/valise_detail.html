@@ -1,0 +1,155 @@
+{% extends 'vetements/base.html' %}
+
+{% block title %}{{ valise.nom }} - Ma Garde-Robe{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>🧳 {{ valise.nom }}</h1>
+    <span class="badge {% if valise.statut == 'prete' %}success{% elif valise.statut == 'en_cours' %}warning{% endif %}">
+        {{ valise.get_statut_display }}
+    </span>
+</div>
+
+<div class="section">
+    <h2>Informations du voyage</h2>
+    <div class="info-grid">
+        <div class="info-item">
+            <strong>📍 Destination:</strong>
+            <span>{{ valise.destination }}</span>
+        </div>
+        <div class="info-item">
+            <strong>🎒 Type de voyage:</strong>
+            <span>{{ valise.get_type_voyage_display }}</span>
+        </div>
+        <div class="info-item">
+            <strong>📅 Date de départ:</strong>
+            <span>{{ valise.date_depart|date:"l d F Y" }}</span>
+        </div>
+        <div class="info-item">
+            <strong>📅 Date de retour:</strong>
+            <span>{{ valise.date_retour|date:"l d F Y" }}</span>
+        </div>
+        <div class="info-item">
+            <strong>⏱️ Durée:</strong>
+            <span>{{ valise.duree_sejour }} jour(s)</span>
+        </div>
+        {% if valise.meteo_prevue %}
+        <div class="info-item">
+            <strong>🌤️ Météo prévue:</strong>
+            <span>{{ valise.meteo_prevue }}</span>
+        </div>
+        {% endif %}
+        {% if valise.climat %}
+        <div class="info-item">
+            <strong>🌡️ Climat:</strong>
+            <span>{{ valise.climat }}</span>
+        </div>
+        {% endif %}
+        {% if valise.checklist_faite %}
+        <div class="info-item">
+            <strong>✅ Checklist:</strong>
+            <span class="alert success">Complétée</span>
+        </div>
+        {% else %}
+        <div class="info-item">
+            <strong>⏳ Checklist:</strong>
+            <span class="alert warning">En cours</span>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% if valise.notes %}
+<div class="section">
+    <h2>📝 Notes</h2>
+    <div class="notes-box">
+        {{ valise.notes|linebreaks }}
+    </div>
+</div>
+{% endif %}
+
+{% if valise.tenues.exists %}
+<div class="section">
+    <h2>👗 Tenues prévues ({{ valise.tenues.count }})</h2>
+    <div class="tenues-grid">
+        {% for tenue in valise.tenues.all %}
+        <div class="tenue-card">
+            <h3>{{ tenue.nom }}</h3>
+            {% if tenue.image %}
+            <img src="{{ tenue.image.url }}" alt="{{ tenue.nom }}" class="tenue-image">
+            {% endif %}
+            <p><strong>🎯 Occasion:</strong> {{ tenue.get_occasion_display }}</p>
+            <p><strong>🍂 Saison:</strong> {{ tenue.get_saison_display }}</p>
+            <p><strong>👕 Pièces:</strong> {{ tenue.vetements.count }} vêtement(s)</p>
+            <a href="{% url 'vetements:tenue_detail' tenue.pk %}" class="btn btn-small">Voir détails</a>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+<div class="section">
+    <h2>👕 Vêtements dans la valise ({{ valise.nombre_vetements }})</h2>
+    {% if valise.vetements.exists %}
+    <div class="vetements-grid">
+        {% for vetement in valise.vetements.all %}
+        <div class="vetement-card">
+            {% if vetement.image %}
+            <img src="{{ vetement.image.url }}" alt="{{ vetement.nom }}" class="vetement-image">
+            {% endif %}
+            <h3>{{ vetement.nom }}</h3>
+            <p><strong>📂 Catégorie:</strong> {{ vetement.categorie.nom }}</p>
+            {% if vetement.couleur %}
+            <p><strong>🎨 Couleur:</strong> {{ vetement.couleur.nom }}</p>
+            {% endif %}
+            {% if vetement.taille %}
+            <p><strong>📏 Taille:</strong> {{ vetement.taille.nom }}</p>
+            {% endif %}
+            <p><strong>📊 État:</strong> {{ vetement.get_etat_display }}</p>
+            {% if vetement.a_laver %}
+            <p class="alert warning">🧺 À laver avant le départ!</p>
+            {% endif %}
+            <a href="{% url 'vetements:detail_vetement' vetement.pk %}" class="btn btn-small">Voir détails</a>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert">
+        <p>Aucun vêtement ajouté à cette valise.</p>
+        <p>Utilisez l'interface d'administration pour ajouter des vêtements.</p>
+    </div>
+    {% endif %}
+</div>
+
+{% if valise.liste_articles_supplementaires %}
+<div class="section">
+    <h2>🎒 Autres articles à emporter</h2>
+    <div class="notes-box">
+        {{ valise.liste_articles_supplementaires|linebreaks }}
+    </div>
+</div>
+{% endif %}
+
+<div class="section">
+    <h3>📊 Résumé du contenu</h3>
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-value">{{ valise.nombre_vetements }}</div>
+            <div class="stat-label">Vêtements</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ valise.tenues.count }}</div>
+            <div class="stat-label">Tenues complètes</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value">{{ valise.duree_sejour }}</div>
+            <div class="stat-label">Jours de voyage</div>
+        </div>
+    </div>
+</div>
+
+<div class="actions">
+    <a href="{% url 'vetements:valises_list' %}" class="btn btn-secondary">Retour aux valises</a>
+    <a href="/admin/vetements/valise/{{ valise.pk }}/change/" class="btn btn-primary">Modifier la valise</a>
+</div>
+{% endblock %}

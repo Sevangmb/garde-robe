@@ -1,0 +1,752 @@
+{% extends 'vetements/base.html' %}
+
+{% block title %}Statistiques - Ma Garde-Robe{% endblock %}
+
+{% block content %}
+<style>
+    .stats-header {
+        background: linear-gradient(135deg, #B09199 0%, #8C7A9E 100%);
+        color: white;
+        padding: 40px 30px;
+        border-radius: 12px;
+        margin-bottom: 30px;
+        box-shadow: 0 4px 12px rgba(176, 145, 153, 0.3);
+    }
+
+    .stats-header h1 {
+        margin: 0 0 10px 0;
+        font-size: 2.2rem;
+        font-weight: 300;
+    }
+
+    .stats-header .subtitle {
+        margin: 0;
+        opacity: 0.9;
+        font-size: 1.1rem;
+    }
+
+    /* KPIs améliorés */
+    .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+
+    .kpi-card {
+        background: white;
+        border-radius: 12px;
+        padding: 25px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        transition: all 0.3s ease;
+        border-left: 4px solid;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .kpi-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 20px rgba(176, 145, 153, 0.25);
+    }
+
+    .kpi-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        opacity: 0.1;
+        transform: translate(30%, -30%);
+    }
+
+    .kpi-card.primary {
+        border-left-color: #B09199;
+    }
+
+    .kpi-card.primary::before {
+        background: #B09199;
+    }
+
+    .kpi-card.secondary {
+        border-left-color: #E94B5A;
+    }
+
+    .kpi-card.secondary::before {
+        background: #E94B5A;
+    }
+
+    .kpi-card.tertiary {
+        border-left-color: #E8874F;
+    }
+
+    .kpi-card.tertiary::before {
+        background: #E8874F;
+    }
+
+    .kpi-card.quaternary {
+        border-left-color: #8C7A9E;
+    }
+
+    .kpi-card.quaternary::before {
+        background: #8C7A9E;
+    }
+
+    .kpi-card.quinary {
+        border-left-color: #F5D987;
+    }
+
+    .kpi-card.quinary::before {
+        background: #F5D987;
+    }
+
+    .kpi-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 15px;
+    }
+
+    .kpi-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+    }
+
+    .kpi-card.primary .kpi-icon {
+        background: rgba(176, 145, 153, 0.15);
+        color: #B09199;
+    }
+
+    .kpi-card.secondary .kpi-icon {
+        background: rgba(233, 75, 90, 0.15);
+        color: #E94B5A;
+    }
+
+    .kpi-card.tertiary .kpi-icon {
+        background: rgba(232, 135, 79, 0.15);
+        color: #E8874F;
+    }
+
+    .kpi-card.quaternary .kpi-icon {
+        background: rgba(140, 122, 158, 0.15);
+        color: #8C7A9E;
+    }
+
+    .kpi-card.quinary .kpi-icon {
+        background: rgba(245, 217, 135, 0.3);
+        color: #d4a800;
+    }
+
+    .kpi-title {
+        font-size: 0.9rem;
+        color: #6B6560;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 500;
+    }
+
+    .kpi-value {
+        font-size: 2.2rem;
+        font-weight: 600;
+        color: #3A3632;
+        margin: 10px 0 5px 0;
+        position: relative;
+        z-index: 1;
+    }
+
+    .kpi-label {
+        font-size: 0.85rem;
+        color: #6B6560;
+    }
+
+    .kpi-trend {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.85rem;
+        padding: 4px 10px;
+        border-radius: 20px;
+        margin-top: 8px;
+    }
+
+    .kpi-trend.positive {
+        background: rgba(76, 175, 80, 0.1);
+        color: #2e7d32;
+    }
+
+    .kpi-trend.negative {
+        background: rgba(244, 67, 54, 0.1);
+        color: #c62828;
+    }
+
+    .kpi-trend.neutral {
+        background: rgba(158, 158, 158, 0.1);
+        color: #616161;
+    }
+
+    /* Graphiques */
+    .charts-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+        gap: 25px;
+        margin-bottom: 30px;
+    }
+
+    .chart-card {
+        background: white;
+        border-radius: 12px;
+        padding: 25px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .chart-card h2 {
+        font-size: 1.3rem;
+        color: #3A3632;
+        margin: 0 0 20px 0;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .chart-card h2 i {
+        color: #B09199;
+        font-size: 1.4rem;
+    }
+
+    .chart-container {
+        position: relative;
+        height: 300px;
+    }
+
+    .chart-container.tall {
+        height: 400px;
+    }
+
+    /* Sections */
+    .section {
+        background: white;
+        border-radius: 12px;
+        padding: 25px;
+        margin-bottom: 25px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .section h2 {
+        font-size: 1.3rem;
+        color: #3A3632;
+        margin: 0 0 20px 0;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .section h2 i {
+        color: #B09199;
+        font-size: 1.4rem;
+    }
+
+    .table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .table thead {
+        background: #F5F3F0;
+    }
+
+    .table th {
+        padding: 12px 15px;
+        text-align: left;
+        font-weight: 500;
+        color: #3A3632;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .table td {
+        padding: 12px 15px;
+        border-bottom: 1px solid #F5F3F0;
+        color: #6B6560;
+    }
+
+    .table tbody tr:hover {
+        background: rgba(176, 145, 153, 0.05);
+    }
+
+    .alert {
+        padding: 15px 20px;
+        border-radius: 8px;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .alert.warning {
+        background: rgba(232, 135, 79, 0.15);
+        color: #d97638;
+        border-left: 4px solid #E8874F;
+    }
+
+    .alert.success {
+        background: rgba(76, 175, 80, 0.15);
+        color: #2e7d32;
+        border-left: 4px solid #4caf50;
+    }
+
+    .alert i {
+        font-size: 24px;
+    }
+
+    .actions {
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+        margin-top: 30px;
+    }
+
+    @media (max-width: 768px) {
+        .charts-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .kpi-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div class="stats-header">
+    <h1><i class="material-icons" style="vertical-align: middle; margin-right: 10px;">insights</i>Tableau de Bord Statistiques</h1>
+    <p class="subtitle">Analyse détaillée de votre garde-robe</p>
+</div>
+
+<!-- KPIs principaux -->
+<div class="kpi-grid">
+    <div class="kpi-card primary">
+        <div class="kpi-header">
+            <div class="kpi-icon">
+                <i class="material-icons">checkroom</i>
+            </div>
+            <div class="kpi-title">Total Vêtements</div>
+        </div>
+        <div class="kpi-value">{{ total_vetements }}</div>
+        <div class="kpi-label">pièces dans votre garde-robe</div>
+    </div>
+
+    <div class="kpi-card secondary">
+        <div class="kpi-header">
+            <div class="kpi-icon">
+                <i class="material-icons">euro</i>
+            </div>
+            <div class="kpi-title">Investissement Total</div>
+        </div>
+        <div class="kpi-value">{{ total_depense|floatformat:0 }} €</div>
+        <div class="kpi-label">valeur de votre collection</div>
+    </div>
+
+    <div class="kpi-card tertiary">
+        <div class="kpi-header">
+            <div class="kpi-icon">
+                <i class="material-icons">autorenew</i>
+            </div>
+            <div class="kpi-title">Total Portages</div>
+        </div>
+        <div class="kpi-value">{{ total_portages }}</div>
+        <div class="kpi-label">utilisations cumulées</div>
+    </div>
+
+    {% if cout_moyen_portage %}
+    <div class="kpi-card quaternary">
+        <div class="kpi-header">
+            <div class="kpi-icon">
+                <i class="material-icons">calculate</i>
+            </div>
+            <div class="kpi-title">Coût par Portage</div>
+        </div>
+        <div class="kpi-value">{{ cout_moyen_portage|floatformat:2 }} €</div>
+        <div class="kpi-label">rentabilité moyenne</div>
+    </div>
+    {% endif %}
+
+    {% if total_vetements > 0 %}
+    <div class="kpi-card quinary">
+        <div class="kpi-header">
+            <div class="kpi-icon">
+                <i class="material-icons">trending_up</i>
+            </div>
+            <div class="kpi-title">Taux d'Utilisation</div>
+        </div>
+        <div class="kpi-value">{% if total_vetements > 0 %}{% widthratio total_portages total_vetements 1 %}{% else %}0{% endif %}</div>
+        <div class="kpi-label">portages par vêtement</div>
+    </div>
+    {% endif %}
+
+    {% if peu_portes %}
+    <div class="kpi-card secondary">
+        <div class="kpi-header">
+            <div class="kpi-icon">
+                <i class="material-icons">warning</i>
+            </div>
+            <div class="kpi-title">Vêtements Sous-Utilisés</div>
+        </div>
+        <div class="kpi-value">{{ peu_portes|length }}</div>
+        <div class="kpi-label">moins de 3 portages</div>
+        <div class="kpi-trend negative">
+            <i class="material-icons tiny">arrow_downward</i>
+            {% widthratio peu_portes|length total_vetements 100 %}% de votre garde-robe
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Graphiques -->
+<div class="charts-grid">
+    <!-- Graphique Catégories -->
+    <div class="chart-card">
+        <h2><i class="material-icons">pie_chart</i>Répartition par Catégorie</h2>
+        <div class="chart-container">
+            <canvas id="categoriesChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Graphique Couleurs -->
+    <div class="chart-card">
+        <h2><i class="material-icons">palette</i>Top 10 Couleurs</h2>
+        <div class="chart-container">
+            <canvas id="couleursChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Graphique Saisons -->
+    <div class="chart-card">
+        <h2><i class="material-icons">wb_sunny</i>Répartition par Saison</h2>
+        <div class="chart-container">
+            <canvas id="saisonsChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Graphique Vêtements les plus portés -->
+    {% if plus_portes %}
+    <div class="chart-card">
+        <h2><i class="material-icons">trending_up</i>Vêtements les Plus Portés</h2>
+        <div class="chart-container">
+            <canvas id="plusPortesChart"></canvas>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Section Top vêtements portés (tableau détaillé) -->
+<div class="section">
+    <h2><i class="material-icons">star</i>Vêtements les Plus Portés - Détails</h2>
+    {% if plus_portes %}
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Vêtement</th>
+                <th>Catégorie</th>
+                <th>Portages</th>
+                <th>Dernière utilisation</th>
+                {% if cout_moyen_portage %}
+                <th>Coût/Portage</th>
+                {% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for vetement in plus_portes %}
+            <tr>
+                <td>
+                    <a href="{% url 'vetements:detail_vetement' vetement.pk %}" style="color: #8C7A9E; font-weight: 500;">
+                        {{ vetement.nom }}
+                    </a>
+                    {% if vetement.favori %}⭐{% endif %}
+                </td>
+                <td>{{ vetement.categorie.nom }}</td>
+                <td><strong style="color: #B09199;">{{ vetement.nombre_portage }}</strong></td>
+                <td>{% if vetement.derniere_utilisation %}{{ vetement.derniere_utilisation|date:"d/m/Y" }}{% else %}-{% endif %}</td>
+                {% if cout_moyen_portage %}
+                <td>{% if vetement.cout_par_portage %}{{ vetement.cout_par_portage|floatformat:2 }} €{% else %}-{% endif %}</td>
+                {% endif %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="color: #6B6560; text-align: center; padding: 20px;">Aucun vêtement porté pour le moment.</p>
+    {% endif %}
+</div>
+
+<!-- Section Vêtements peu portés -->
+<div class="section">
+    <h2><i class="material-icons">error_outline</i>Vêtements Peu Portés (moins de 3 fois)</h2>
+    {% if peu_portes %}
+    <div class="alert warning">
+        <i class="material-icons">info</i>
+        <div>
+            <strong>{{ peu_portes|length }} vêtement(s)</strong> sont peu ou pas portés. Peut-être le moment de faire le tri ?
+        </div>
+    </div>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Vêtement</th>
+                <th>Catégorie</th>
+                <th>Portages</th>
+                <th>Date d'ajout</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for vetement in peu_portes %}
+            <tr>
+                <td><a href="{% url 'vetements:detail_vetement' vetement.pk %}" style="color: #8C7A9E;">{{ vetement.nom }}</a></td>
+                <td>{{ vetement.categorie.nom }}</td>
+                <td>{{ vetement.nombre_portage }}</td>
+                <td>{{ vetement.date_ajout|date:"d/m/Y" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="alert success">
+        <i class="material-icons">check_circle</i>
+        <div>
+            <strong>Excellent!</strong> Tous vos vêtements sont bien utilisés.
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<div class="actions">
+    <a href="{% url 'vetements:accueil' %}" class="btn btn-secondary">
+        <i class="material-icons left">arrow_back</i>Retour au tableau de bord
+    </a>
+    <a href="{% url 'vetements:liste_vetements' %}" class="btn">
+        <i class="material-icons left">checkroom</i>Voir ma garde-robe
+    </a>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+<script>
+    // Palette de couleurs Pantone SS26
+    const colors = {
+        mauveRose: '#B09199',
+        rougeCorail: '#E94B5A',
+        jaunePastel: '#F5D987',
+        orangeMandarine: '#E8874F',
+        violetMauve: '#8C7A9E',
+        gris: '#6B6560'
+    };
+
+    const paletteColors = [
+        colors.mauveRose,
+        colors.violetMauve,
+        colors.rougeCorail,
+        colors.orangeMandarine,
+        colors.jaunePastel,
+        '#9DB8B3', // Vert sauge
+        '#C9A9A6', // Rose poudré
+        '#7B9CAF', // Bleu gris
+        '#D4A5A5', // Rose ancien
+        '#B8A99A'  // Beige
+    ];
+
+    // Configuration commune
+    const commonOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: {
+                    padding: 15,
+                    font: {
+                        size: 12,
+                        family: "'Roboto', sans-serif"
+                    },
+                    color: colors.gris
+                }
+            }
+        }
+    };
+
+    // Graphique Catégories (Doughnut)
+    {% if par_categorie %}
+    const categoriesCtx = document.getElementById('categoriesChart').getContext('2d');
+    new Chart(categoriesCtx, {
+        type: 'doughnut',
+        data: {
+            labels: [{% for cat in par_categorie %}'{{ cat.categorie__nom }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
+            datasets: [{
+                data: [{% for cat in par_categorie %}{{ cat.count }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+                backgroundColor: paletteColors,
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            ...commonOptions,
+            cutout: '60%',
+            plugins: {
+                ...commonOptions.plugins,
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const label = context.label || '';
+                            const value = context.parsed;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = Math.round((value / total) * 100);
+                            return `${label}: ${value} (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+    {% endif %}
+
+    // Graphique Couleurs (Bar horizontal)
+    {% if par_couleur %}
+    const couleursCtx = document.getElementById('couleursChart').getContext('2d');
+    new Chart(couleursCtx, {
+        type: 'bar',
+        data: {
+            labels: [{% for couleur in par_couleur %}'{{ couleur.couleur__nom|default:"Non définie" }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
+            datasets: [{
+                label: 'Nombre de vêtements',
+                data: [{% for couleur in par_couleur %}{{ couleur.count }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+                backgroundColor: colors.mauveRose,
+                borderRadius: 6
+            }]
+        },
+        options: {
+            ...commonOptions,
+            indexAxis: 'y',
+            plugins: {
+                ...commonOptions.plugins,
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    grid: {
+                        color: '#F5F3F0'
+                    },
+                    ticks: {
+                        color: colors.gris
+                    }
+                },
+                y: {
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        color: colors.gris
+                    }
+                }
+            }
+        }
+    });
+    {% endif %}
+
+    // Graphique Saisons (Polar Area)
+    {% if par_saison %}
+    const saisonsCtx = document.getElementById('saisonsChart').getContext('2d');
+    new Chart(saisonsCtx, {
+        type: 'polarArea',
+        data: {
+            labels: [{% for saison in par_saison %}'{{ saison.saison|capfirst }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
+            datasets: [{
+                data: [{% for saison in par_saison %}{{ saison.count }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+                backgroundColor: [
+                    colors.mauveRose + '80',
+                    colors.violetMauve + '80',
+                    colors.orangeMandarine + '80',
+                    colors.rougeCorail + '80'
+                ],
+                borderColor: [
+                    colors.mauveRose,
+                    colors.violetMauve,
+                    colors.orangeMandarine,
+                    colors.rougeCorail
+                ],
+                borderWidth: 2
+            }]
+        },
+        options: {
+            ...commonOptions,
+            scales: {
+                r: {
+                    beginAtZero: true,
+                    grid: {
+                        color: '#F5F3F0'
+                    },
+                    ticks: {
+                        color: colors.gris,
+                        backdropColor: 'transparent'
+                    }
+                }
+            }
+        }
+    });
+    {% endif %}
+
+    // Graphique Vêtements les plus portés
+    {% if plus_portes %}
+    const plusPortesCtx = document.getElementById('plusPortesChart').getContext('2d');
+    new Chart(plusPortesCtx, {
+        type: 'bar',
+        data: {
+            labels: [{% for vetement in plus_portes|slice:":10" %}'{{ vetement.nom|truncatewords:3 }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
+            datasets: [{
+                label: 'Nombre de portages',
+                data: [{% for vetement in plus_portes|slice:":10" %}{{ vetement.nombre_portage }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+                backgroundColor: colors.violetMauve,
+                borderRadius: 6
+            }]
+        },
+        options: {
+            ...commonOptions,
+            plugins: {
+                ...commonOptions.plugins,
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: '#F5F3F0'
+                    },
+                    ticks: {
+                        color: colors.gris
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        color: colors.gris
+                    }
+                }
+            }
+        }
+    });
+    {% endif %}
+</script>
+{% endblock %}

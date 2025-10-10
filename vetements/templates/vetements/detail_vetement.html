@@ -1,0 +1,155 @@
+{% extends 'vetements/base.html' %}
+
+{% block title %}{{ vetement.nom }} - Gestion de Vêtements{% endblock %}
+
+{% block content %}
+<div class="breadcrumb">
+    <a href="{% url 'vetements:accueil' %}">Accueil</a> &raquo;
+    <a href="{% url 'vetements:liste_vetements' %}">Catalogue</a> &raquo;
+    {{ vetement.nom }}
+</div>
+
+<div class="detail-container">
+    <div class="detail-image">
+        {% if vetement.image %}
+            <img src="{{ vetement.image.url }}" alt="{{ vetement.nom }}">
+        {% else %}
+            <div class="no-image-large">Pas d'image disponible</div>
+        {% endif %}
+    </div>
+
+    <div class="detail-info">
+        <h1>{{ vetement.nom }}</h1>
+        <p class="reference">Référence: <strong>{{ vetement.reference }}</strong></p>
+
+        <div class="info-section">
+            <h3>Catégorie</h3>
+            <p>{{ vetement.categorie.nom }}</p>
+        </div>
+
+        <div class="info-section">
+            <h3>Description</h3>
+            <p>{{ vetement.description|default:"Aucune description disponible." }}</p>
+        </div>
+
+        <div class="info-grid">
+            <div class="info-item">
+                <strong>Genre:</strong> {{ vetement.get_genre_display }}
+            </div>
+            <div class="info-item">
+                <strong>Saison:</strong> {{ vetement.get_saison_display }}
+            </div>
+            <div class="info-item">
+                <strong>État:</strong> {{ vetement.get_etat_display }}
+            </div>
+            {% if vetement.couleur %}
+            <div class="info-item">
+                <strong>Couleur:</strong> {{ vetement.couleur.nom }}
+            </div>
+            {% endif %}
+            {% if vetement.taille %}
+            <div class="info-item">
+                <strong>Taille:</strong> {{ vetement.taille.nom }}
+            </div>
+            {% endif %}
+            {% if vetement.marque %}
+            <div class="info-item">
+                <strong>Marque:</strong> {{ vetement.marque }}
+            </div>
+            {% endif %}
+            {% if vetement.matiere %}
+            <div class="info-item">
+                <strong>Matière:</strong> {{ vetement.matiere }}
+            </div>
+            {% endif %}
+            {% if vetement.emplacement %}
+            <div class="info-item">
+                <strong>Emplacement:</strong> {{ vetement.emplacement }}
+            </div>
+            {% endif %}
+        </div>
+
+        {% if vetement.prix_achat or vetement.date_achat or vetement.lieu_achat %}
+        <div class="info-section">
+            <h3>Informations d'achat</h3>
+            <div class="pricing">
+                {% if vetement.prix_achat %}
+                <div class="price-item">
+                    <span class="label">Prix payé:</span>
+                    <span class="value">{{ vetement.prix_achat }} €</span>
+                </div>
+                {% endif %}
+                {% if vetement.date_achat %}
+                <div class="price-item">
+                    <span class="label">Date d'achat:</span>
+                    <span class="value">{{ vetement.date_achat|date:"d/m/Y" }}</span>
+                </div>
+                {% endif %}
+                {% if vetement.lieu_achat %}
+                <div class="price-item">
+                    <span class="label">Lieu d'achat:</span>
+                    <span class="value">{{ vetement.lieu_achat }}</span>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="info-section">
+            <h3>Utilisation</h3>
+            <div class="pricing">
+                <div class="price-item">
+                    <span class="label">Porté:</span>
+                    <span class="value"><strong>{{ vetement.nombre_portage }}</strong> fois</span>
+                </div>
+                {% if vetement.derniere_utilisation %}
+                <div class="price-item">
+                    <span class="label">Dernière fois:</span>
+                    <span class="value">{{ vetement.derniere_utilisation|date:"d/m/Y" }}</span>
+                </div>
+                {% endif %}
+                {% if vetement.cout_par_portage %}
+                <div class="price-item">
+                    <span class="label">Coût par portage:</span>
+                    <span class="value">{{ vetement.cout_par_portage|floatformat:2 }} €</span>
+                </div>
+                {% endif %}
+                <div class="price-item">
+                    <span class="label">Favori:</span>
+                    <span class="value">{% if vetement.favori %}⭐ Oui{% else %}Non{% endif %}</span>
+                </div>
+            </div>
+        </div>
+
+        {% if vetement.besoin_entretien or vetement.prete %}
+        <div class="stock-info warning">
+            <h3>⚠️ Attention</h3>
+            {% if vetement.a_laver %}
+                <p class="alert warning">🧺 Ce vêtement est à laver</p>
+            {% endif %}
+            {% if vetement.a_repasser %}
+                <p class="alert warning">👔 Ce vêtement est à repasser</p>
+            {% endif %}
+            {% if vetement.etat == 'reparer' %}
+                <p class="alert danger">🔧 Ce vêtement est à réparer</p>
+            {% endif %}
+            {% if vetement.prete %}
+                <p class="alert warning">👤 Ce vêtement est prêté{% if vetement.prete_a %} à {{ vetement.prete_a }}{% endif %}</p>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        {% if vetement.notes %}
+        <div class="info-section">
+            <h3>Notes</h3>
+            <p>{{ vetement.notes|linebreaks }}</p>
+        </div>
+        {% endif %}
+
+        <div class="actions">
+            <a href="{% url 'vetements:liste_vetements' %}" class="btn btn-secondary">Retour au catalogue</a>
+            <a href="/admin/vetements/vetement/{{ vetement.pk }}/change/" class="btn btn-primary">Modifier</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

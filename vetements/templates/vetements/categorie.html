@@ -1,0 +1,37 @@
+{% extends 'vetements/base.html' %}
+
+{% block title %}{{ categorie.nom }} - Gestion de Vêtements{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>{{ categorie.nom }}</h1>
+    {% if categorie.description %}
+    <p class="subtitle">{{ categorie.description }}</p>
+    {% endif %}
+</div>
+
+<div class="vetements-grid">
+    {% for vetement in vetements %}
+    <div class="vetement-card">
+        {% if vetement.image %}
+            <img src="{{ vetement.image.url }}" alt="{{ vetement.nom }}">
+        {% else %}
+            <div class="no-image">Pas d'image</div>
+        {% endif %}
+        <div class="vetement-info">
+            <h3>{{ vetement.nom }}</h3>
+            <p class="reference">Réf: {{ vetement.reference }}</p>
+            <p class="prix">{{ vetement.prix_vente }} €</p>
+            <p class="stock">Stock: {{ vetement.quantite_stock }}</p>
+            <a href="{% url 'vetements:detail_vetement' vetement.pk %}" class="btn">Voir détails</a>
+        </div>
+    </div>
+    {% empty %}
+    <p class="no-results">Aucun vêtement dans cette catégorie.</p>
+    {% endfor %}
+</div>
+
+<div class="actions">
+    <a href="{% url 'vetements:liste_vetements' %}" class="btn btn-secondary">Retour au catalogue</a>
+</div>
+{% endblock %}

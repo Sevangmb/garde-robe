@@ -1,0 +1,164 @@
+{% extends 'vetements/base.html' %}
+
+{% block title %}Tableau de bord - Ma Garde-Robe{% endblock %}
+
+{% block content %}
+<!-- Page Header -->
+<div class="page-title">
+    <h2 class="indigo-text text-darken-2">Tableau de bord</h2>
+    <p class="grey-text">Bienvenue dans votre garde-robe personnelle</p>
+</div>
+
+<!-- Statistiques -->
+<div class="row">
+    <div class="col s12 m6 l3">
+        <div class="card-panel indigo lighten-5 center hoverable">
+            <i class="material-icons large indigo-text">checkroom</i>
+            <h3 class="indigo-text">{{ total_vetements }}</h3>
+            <p class="grey-text">Vêtements</p>
+        </div>
+    </div>
+    <div class="col s12 m6 l3">
+        <div class="card-panel amber lighten-5 center hoverable">
+            <i class="material-icons large amber-text text-darken-2">star</i>
+            <h3 class="amber-text text-darken-2">{{ favoris }}</h3>
+            <p class="grey-text">Favoris</p>
+        </div>
+    </div>
+    <div class="col s12 m6 l3">
+        <div class="card-panel orange lighten-5 center hoverable">
+            <i class="material-icons large orange-text">local_laundry_service</i>
+            <h3 class="orange-text">{{ a_laver }}</h3>
+            <p class="grey-text">À laver</p>
+        </div>
+    </div>
+    <div class="col s12 m6 l3">
+        <div class="card-panel purple lighten-5 center hoverable">
+            <i class="material-icons large purple-text">style</i>
+            <h3 class="purple-text">{{ total_tenues }}</h3>
+            <p class="grey-text">Tenues</p>
+        </div>
+    </div>
+</div>
+
+<!-- Statistiques financières et d'utilisation -->
+<div class="row">
+    <div class="col s12 m4">
+        <div class="card-panel green lighten-5 center hoverable">
+            <i class="material-icons medium green-text">euro_symbol</i>
+            <h5 class="green-text">{{ total_depense|floatformat:2 }} €</h5>
+            <p class="grey-text">Total dépensé</p>
+        </div>
+    </div>
+    <div class="col s12 m4">
+        <div class="card-panel blue lighten-5 center hoverable">
+            <i class="material-icons medium blue-text">repeat</i>
+            <h5 class="blue-text">{{ total_portages }}</h5>
+            <p class="grey-text">Total portages</p>
+        </div>
+    </div>
+    <div class="col s12 m4">
+        <div class="card-panel red lighten-5 center hoverable">
+            <i class="material-icons medium red-text">warning</i>
+            <h5 class="red-text">{{ peu_portes }}</h5>
+            <p class="grey-text">Peu portés</p>
+        </div>
+    </div>
+</div>
+
+<!-- Top 5 Catégories -->
+<div class="row">
+    <div class="col s12">
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title indigo-text">
+                    <i class="material-icons left">category</i>Top 5 Catégories
+                </span>
+                <div class="collection">
+                    {% for cat in par_categorie %}
+                    <div class="collection-item">
+                        <span class="badge indigo white-text">{{ cat.count }}</span>
+                        {{ cat.categorie__nom }}
+                    </div>
+                    {% empty %}
+                    <div class="collection-item grey-text">Aucune catégorie disponible</div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Derniers Vêtements Ajoutés -->
+<div class="row">
+    <div class="col s12">
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title indigo-text">
+                    <i class="material-icons left">new_releases</i>Derniers Vêtements Ajoutés
+                </span>
+                <div class="row">
+                    {% for vetement in derniers_vetements %}
+                    <div class="col s12 m6 l4">
+                        <div class="card hoverable">
+                            <div class="card-image">
+                                {% if vetement.image %}
+                                    <img src="{{ vetement.image.url }}" alt="{{ vetement.nom }}" style="height: 250px; object-fit: cover;">
+                                {% else %}
+                                    <div style="height: 250px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center;">
+                                        <i class="material-icons white-text" style="font-size: 80px;">checkroom</i>
+                                    </div>
+                                {% endif %}
+                                {% if vetement.favori %}
+                                <a class="btn-floating halfway-fab waves-effect waves-light amber"><i class="material-icons">star</i></a>
+                                {% endif %}
+                            </div>
+                            <div class="card-content">
+                                <span class="card-title truncate">{{ vetement.nom }}</span>
+                                <p class="grey-text">{{ vetement.categorie.nom }}</p>
+                                {% if vetement.marque %}
+                                <p><i class="material-icons tiny">local_offer</i> {{ vetement.marque }}</p>
+                                {% endif %}
+                                <p><strong>Porté {{ vetement.nombre_portage }} fois</strong></p>
+                            </div>
+                            <div class="card-action">
+                                <a href="{% url 'vetements:detail_vetement' vetement.pk %}" class="indigo-text">Voir détails</a>
+                            </div>
+                        </div>
+                    </div>
+                    {% empty %}
+                    <div class="col s12">
+                        <p class="center grey-text">Aucun vêtement disponible. Commencez par en ajouter un!</p>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Actions rapides -->
+<div class="row">
+    <div class="col s12">
+        <div class="card indigo darken-2">
+            <div class="card-content white-text center">
+                <span class="card-title">Actions rapides</span>
+                <div style="margin-top: 20px;">
+                    <a href="{% url 'vetements:liste_vetements' %}" class="btn waves-effect waves-light white indigo-text text-darken-2" style="margin: 5px;">
+                        <i class="material-icons left">view_list</i>Voir ma garde-robe
+                    </a>
+                    <a href="/admin/vetements/vetement/add/" class="btn waves-effect waves-light green" style="margin: 5px;">
+                        <i class="material-icons left">add</i>Ajouter un vêtement
+                    </a>
+                    <a href="/admin/vetements/tenue/add/" class="btn waves-effect waves-light purple" style="margin: 5px;">
+                        <i class="material-icons left">style</i>Créer une tenue
+                    </a>
+                    <a href="{% url 'vetements:statistiques' %}" class="btn waves-effect waves-light blue" style="margin: 5px;">
+                        <i class="material-icons left">bar_chart</i>Statistiques
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

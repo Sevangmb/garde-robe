@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ollama:*)",
+      "Bash(pip install:*)",
+      "Bash(python:*)",
+      "Bash(django-admin startproject:*)",
+      "Bash(timeout:*)",
+      "Bash(copy:*)",
+      "Bash(taskkill:*)",
+      "Bash(dir:*)",
+      "Bash(git init:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nInitial commit - Application Ma Garde-Robe\n\nFonctionnalités implémentées:\n- Gestion complète des vêtements avec upload photo mobile\n- Système de tenues avec affichage 3 sections (haut/bas/chaussures)\n- Gestion des valises de voyage\n- Dashboard statistiques avec Chart.js et KPIs\n- Messagerie entre utilisateurs\n- Palette Pantone Printemps/Été 2026\n- Admin restreint aux superutilisateurs uniquement\n- Template tags personnalisés pour les tenues\n\n🤖 Generated with Claude Code\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

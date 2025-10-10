@@ -1,0 +1,61 @@
+{% extends 'vetements/base.html' %}
+
+{% block title %}Stock Faible - Gestion de Vêtements{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Vêtements avec Stock Faible</h1>
+    <p class="subtitle">Vêtements nécessitant un réapprovisionnement</p>
+</div>
+
+{% if vetements %}
+<div class="alert warning">
+    <strong>Attention:</strong> {{ vetements|length }} vêtement(s) ont un stock faible ou sont en rupture de stock.
+</div>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Référence</th>
+            <th>Nom</th>
+            <th>Catégorie</th>
+            <th>Stock actuel</th>
+            <th>Stock minimum</th>
+            <th>Statut</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for vetement in vetements %}
+        <tr class="{% if vetement.en_rupture %}danger{% else %}warning{% endif %}">
+            <td>{{ vetement.reference }}</td>
+            <td>{{ vetement.nom }}</td>
+            <td>{{ vetement.categorie.nom }}</td>
+            <td><strong>{{ vetement.quantite_stock }}</strong></td>
+            <td>{{ vetement.stock_minimum }}</td>
+            <td>
+                {% if vetement.en_rupture %}
+                    <span class="badge danger">Rupture</span>
+                {% else %}
+                    <span class="badge warning">Stock faible</span>
+                {% endif %}
+            </td>
+            <td>
+                <a href="{% url 'vetements:detail_vetement' vetement.pk %}" class="btn btn-small">Voir</a>
+                <a href="/admin/vetements/vetement/{{ vetement.pk }}/change/" class="btn btn-small btn-primary">Modifier</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% else %}
+<div class="alert success">
+    <strong>Excellent!</strong> Tous les vêtements ont un stock suffisant.
+</div>
+{% endif %}
+
+<div class="actions">
+    <a href="{% url 'vetements:accueil' %}" class="btn btn-secondary">Retour à l'accueil</a>
+    <a href="{% url 'vetements:liste_vetements' %}" class="btn">Voir le catalogue</a>
+</div>
+{% endblock %}

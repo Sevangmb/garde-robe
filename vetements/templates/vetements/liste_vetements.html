@@ -1,0 +1,189 @@
+{% extends 'vetements/base.html' %}
+
+{% block title %}Ma Garde-Robe - Tous mes vêtements{% endblock %}
+
+{% block content %}
+<div class="page-title">
+    <h2 class="indigo-text text-darken-2">
+        <i class="material-icons left">checkroom</i>Ma Garde-Robe
+    </h2>
+    <p class="grey-text">Gérez votre collection de vêtements</p>
+</div>
+
+<!-- Filtres -->
+<div class="row">
+    <div class="col s12">
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title">
+                    <i class="material-icons left">filter_list</i>Filtres de recherche
+                </span>
+                <form method="get">
+                    <div class="row">
+                        <div class="input-field col s12 m6 l3">
+                            <i class="material-icons prefix">search</i>
+                            <input type="text" name="q" id="search" placeholder="Rechercher..." value="{{ request.GET.q }}">
+                            <label for="search">Recherche</label>
+                        </div>
+
+                        <div class="input-field col s12 m6 l3">
+                            <select name="categorie">
+                                <option value="">Toutes les catégories</option>
+                                {% for cat in categories %}
+                                <option value="{{ cat.id }}" {% if request.GET.categorie == cat.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ cat.nom }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                            <label>Catégorie</label>
+                        </div>
+
+                        <div class="input-field col s12 m6 l3">
+                            <select name="genre">
+                                <option value="">Tous les genres</option>
+                                <option value="homme" {% if request.GET.genre == "homme" %}selected{% endif %}>Homme</option>
+                                <option value="femme" {% if request.GET.genre == "femme" %}selected{% endif %}>Femme</option>
+                                <option value="unisexe" {% if request.GET.genre == "unisexe" %}selected{% endif %}>Unisexe</option>
+                                <option value="enfant" {% if request.GET.genre == "enfant" %}selected{% endif %}>Enfant</option>
+                            </select>
+                            <label>Genre</label>
+                        </div>
+
+                        <div class="input-field col s12 m6 l3">
+                            <select name="saison">
+                                <option value="">Toutes les saisons</option>
+                                <option value="printemps" {% if request.GET.saison == "printemps" %}selected{% endif %}>Printemps</option>
+                                <option value="ete" {% if request.GET.saison == "ete" %}selected{% endif %}>Été</option>
+                                <option value="automne" {% if request.GET.saison == "automne" %}selected{% endif %}>Automne</option>
+                                <option value="hiver" {% if request.GET.saison == "hiver" %}selected{% endif %}>Hiver</option>
+                                <option value="toute_saison" {% if request.GET.saison == "toute_saison" %}selected{% endif %}>Toute saison</option>
+                            </select>
+                            <label>Saison</label>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col s12 m6">
+                            <p>
+                                <label>
+                                    <input type="checkbox" name="favori" {% if request.GET.favori %}checked{% endif %} />
+                                    <span>Favoris uniquement</span>
+                                </label>
+                            </p>
+                        </div>
+                        <div class="col s12 m6">
+                            <p>
+                                <label>
+                                    <input type="checkbox" name="a_laver" {% if request.GET.a_laver %}checked{% endif %} />
+                                    <span>À laver uniquement</span>
+                                </label>
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col s12 center">
+                            <button type="submit" class="btn waves-effect waves-light indigo darken-2">
+                                <i class="material-icons left">search</i>Filtrer
+                            </button>
+                            <a href="{% url 'vetements:liste_vetements' %}" class="btn waves-effect waves-light grey">
+                                <i class="material-icons left">clear</i>Réinitialiser
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Liste des vêtements -->
+<div class="row">
+    {% for vetement in vetements %}
+    <div class="col s12 m6 l4 xl3">
+        <div class="card hoverable">
+            <div class="card-image">
+                {% if vetement.image %}
+                    <img src="{{ vetement.image.url }}" alt="{{ vetement.nom }}" style="height: 300px; object-fit: cover;">
+                {% else %}
+                    <div style="height: 300px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; align-items: center; justify-content: center;">
+                        <i class="material-icons white-text" style="font-size: 100px;">checkroom</i>
+                    </div>
+                {% endif %}
+                {% if vetement.favori %}
+                <a class="btn-floating halfway-fab waves-effect waves-light amber tooltipped" data-position="left" data-tooltip="Favori">
+                    <i class="material-icons">star</i>
+                </a>
+                {% endif %}
+            </div>
+            <div class="card-content">
+                <span class="card-title truncate">{{ vetement.nom }}</span>
+                <p class="grey-text">
+                    <i class="material-icons tiny">category</i> {{ vetement.categorie.nom }}
+                </p>
+                {% if vetement.marque %}
+                <p><i class="material-icons tiny">local_offer</i> {{ vetement.marque }}</p>
+                {% endif %}
+                {% if vetement.couleur %}
+                <p><i class="material-icons tiny">palette</i> {{ vetement.couleur }}</p>
+                {% endif %}
+                <p><i class="material-icons tiny">repeat</i> Porté {{ vetement.nombre_portage }} fois</p>
+                {% if vetement.a_laver %}
+                <p class="orange-text"><i class="material-icons tiny">local_laundry_service</i> À laver</p>
+                {% endif %}
+            </div>
+            <div class="card-action">
+                <a href="{% url 'vetements:detail_vetement' vetement.pk %}" class="indigo-text">
+                    <i class="material-icons left tiny">visibility</i>Voir détails
+                </a>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col s12">
+        <div class="card-panel center grey lighten-3">
+            <i class="material-icons large grey-text">sentiment_dissatisfied</i>
+            <h5 class="grey-text">Aucun vêtement trouvé</h5>
+            <p class="grey-text">Essayez de modifier vos filtres ou ajoutez de nouveaux vêtements à votre garde-robe.</p>
+            <a href="/admin/vetements/vetement/add/" class="btn waves-effect waves-light green" style="margin-top: 20px;">
+                <i class="material-icons left">add</i>Ajouter un vêtement
+            </a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Pagination -->
+{% if is_paginated %}
+<div class="row">
+    <div class="col s12 center">
+        <ul class="pagination">
+            {% if page_obj.has_previous %}
+            <li class="waves-effect"><a href="?page=1{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.categorie %}&categorie={{ request.GET.categorie }}{% endif %}"><i class="material-icons">first_page</i></a></li>
+            <li class="waves-effect"><a href="?page={{ page_obj.previous_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.categorie %}&categorie={{ request.GET.categorie }}{% endif %}"><i class="material-icons">chevron_left</i></a></li>
+            {% else %}
+            <li class="disabled"><a href="#!"><i class="material-icons">first_page</i></a></li>
+            <li class="disabled"><a href="#!"><i class="material-icons">chevron_left</i></a></li>
+            {% endif %}
+
+            <li class="active indigo darken-2"><a href="#!">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</a></li>
+
+            {% if page_obj.has_next %}
+            <li class="waves-effect"><a href="?page={{ page_obj.next_page_number }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.categorie %}&categorie={{ request.GET.categorie }}{% endif %}"><i class="material-icons">chevron_right</i></a></li>
+            <li class="waves-effect"><a href="?page={{ page_obj.paginator.num_pages }}{% if request.GET.q %}&q={{ request.GET.q }}{% endif %}{% if request.GET.categorie %}&categorie={{ request.GET.categorie }}{% endif %}"><i class="material-icons">last_page</i></a></li>
+            {% else %}
+            <li class="disabled"><a href="#!"><i class="material-icons">chevron_right</i></a></li>
+            <li class="disabled"><a href="#!"><i class="material-icons">last_page</i></a></li>
+            {% endif %}
+        </ul>
+    </div>
+</div>
+{% endif %}
+
+<!-- Bouton flottant pour ajouter un vêtement -->
+<div class="fixed-action-btn">
+    <a class="btn-floating btn-large waves-effect waves-light green tooltipped" data-position="left" data-tooltip="Ajouter un vêtement" href="/admin/vetements/vetement/add/">
+        <i class="material-icons">add</i>
+    </a>
+</div>
+{% endblock %}

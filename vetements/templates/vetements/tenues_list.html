@@ -1,0 +1,412 @@
+{% extends 'vetements/base.html' %}
+{% load tenue_tags %}
+
+{% block title %}Mes Tenues - Ma Garde-Robe{% endblock %}
+
+{% block content %}
+<style>
+    .tenues-header {
+        background: linear-gradient(135deg, #B09199 0%, #8C7A9E 100%);
+        color: white;
+        padding: 40px 30px;
+        border-radius: 12px;
+        margin-bottom: 30px;
+        box-shadow: 0 4px 12px rgba(176, 145, 153, 0.3);
+    }
+
+    .tenues-header h1 {
+        margin: 0 0 10px 0;
+        font-size: 2.2rem;
+        font-weight: 300;
+    }
+
+    .tenues-header .subtitle {
+        margin: 0;
+        opacity: 0.9;
+        font-size: 1.1rem;
+    }
+
+    .filters {
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        margin-bottom: 30px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .filter-form {
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+
+    .filter-form select {
+        padding: 10px 15px;
+        border: 2px solid #D4D0CC;
+        border-radius: 8px;
+        font-size: 1rem;
+        color: #3A3632;
+        background: white;
+        cursor: pointer;
+        transition: border-color 0.3s;
+    }
+
+    .filter-form select:focus {
+        outline: none;
+        border-color: #B09199;
+    }
+
+    .filter-form label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        color: #3A3632;
+    }
+
+    .tenues-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 25px;
+        margin-bottom: 30px;
+    }
+
+    .tenue-card {
+        background: white;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        transition: all 0.3s ease;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .tenue-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 20px rgba(176, 145, 153, 0.25);
+    }
+
+    .tenue-images {
+        position: relative;
+        background: #F5F3F0;
+    }
+
+    .outfit-stack {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+    }
+
+    .outfit-item {
+        position: relative;
+        height: 160px;
+        background: #FDFBF7;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+        border-bottom: 1px solid #E8E6E3;
+    }
+
+    .outfit-item:last-child {
+        border-bottom: none;
+    }
+
+    .outfit-item img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .outfit-item.no-image {
+        background: linear-gradient(135deg, rgba(176, 145, 153, 0.1) 0%, rgba(140, 122, 158, 0.1) 100%);
+        color: #6B6560;
+        font-size: 0.9rem;
+        text-align: center;
+    }
+
+    .outfit-label {
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        background: rgba(58, 54, 50, 0.85);
+        color: white;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        z-index: 1;
+    }
+
+    .outfit-label.haut {
+        background: rgba(176, 145, 153, 0.9);
+    }
+
+    .outfit-label.bas {
+        background: rgba(140, 122, 158, 0.9);
+    }
+
+    .outfit-label.chaussures {
+        background: rgba(232, 135, 79, 0.9);
+    }
+
+    .tenue-info {
+        padding: 20px;
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .tenue-info h3 {
+        margin: 0 0 12px 0;
+        font-size: 1.3rem;
+        color: #3A3632;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .tenue-badges {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-bottom: 12px;
+    }
+
+    .badge {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        display: inline-block;
+    }
+
+    .badge.occasion {
+        background: rgba(176, 145, 153, 0.15);
+        color: #B09199;
+    }
+
+    .badge.saison {
+        background: rgba(140, 122, 158, 0.15);
+        color: #8C7A9E;
+    }
+
+    .tenue-stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin: 12px 0;
+        padding: 12px;
+        background: #F5F3F0;
+        border-radius: 8px;
+    }
+
+    .stat-item {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .stat-label {
+        font-size: 0.75rem;
+        color: #6B6560;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .stat-value {
+        font-size: 1.1rem;
+        color: #3A3632;
+        font-weight: 600;
+    }
+
+    .tenue-info .btn {
+        margin-top: auto;
+        width: 100%;
+        text-align: center;
+    }
+
+    .alert {
+        background: rgba(232, 135, 79, 0.15);
+        color: #d97638;
+        padding: 20px;
+        border-radius: 12px;
+        border-left: 4px solid #E8874F;
+        text-align: center;
+    }
+
+    .actions {
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+        margin-top: 30px;
+    }
+
+    @media (max-width: 768px) {
+        .tenues-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .filter-form {
+            flex-direction: column;
+            align-items: stretch;
+        }
+
+        .filter-form select,
+        .filter-form .btn {
+            width: 100%;
+        }
+    }
+</style>
+
+<div class="tenues-header">
+    <h1><i class="material-icons" style="vertical-align: middle; margin-right: 10px;">style</i>Mes Tenues</h1>
+    <p class="subtitle">Combinaisons de vêtements sauvegardées</p>
+</div>
+
+<div class="filters">
+    <form method="get" class="filter-form">
+        <select name="occasion">
+            <option value="">Toutes les occasions</option>
+            <option value="travail" {% if request.GET.occasion == "travail" %}selected{% endif %}>Travail</option>
+            <option value="sport" {% if request.GET.occasion == "sport" %}selected{% endif %}>Sport</option>
+            <option value="soiree" {% if request.GET.occasion == "soiree" %}selected{% endif %}>Soirée</option>
+            <option value="decontracte" {% if request.GET.occasion == "decontracte" %}selected{% endif %}>Décontracté</option>
+            <option value="ceremonie" {% if request.GET.occasion == "ceremonie" %}selected{% endif %}>Cérémonie</option>
+        </select>
+
+        <label>
+            <input type="checkbox" name="favori" value="1" {% if request.GET.favori %}checked{% endif %}>
+            <span>Favoris uniquement ⭐</span>
+        </label>
+
+        <button type="submit" class="btn">Filtrer</button>
+        <a href="{% url 'vetements:tenues_list' %}" class="btn btn-secondary">Réinitialiser</a>
+    </form>
+</div>
+
+{% if tenues %}
+<div class="tenues-grid">
+    {% for tenue in tenues %}
+    <div class="tenue-card">
+        <div class="tenue-images">
+            <div class="outfit-stack">
+                {% with vetements=tenue.vetements.all %}
+                    {% with haut=vetements|get_vetement_by_type:"haut" %}
+                    {% with bas=vetements|get_vetement_by_type:"bas" %}
+                    {% with chaussures=vetements|get_vetement_by_type:"chaussures" %}
+
+                    <!-- Haut -->
+                    {% if haut %}
+                    <div class="outfit-item">
+                        <span class="outfit-label haut">Haut</span>
+                        {% if haut.image %}
+                            <img src="{{ haut.image.url }}" alt="{{ haut.nom }}">
+                        {% else %}
+                            <div class="no-image">{{ haut.nom }}</div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    <!-- Bas -->
+                    {% if bas %}
+                    <div class="outfit-item">
+                        <span class="outfit-label bas">Bas</span>
+                        {% if bas.image %}
+                            <img src="{{ bas.image.url }}" alt="{{ bas.nom }}">
+                        {% else %}
+                            <div class="no-image">{{ bas.nom }}</div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    <!-- Chaussures -->
+                    {% if chaussures %}
+                    <div class="outfit-item">
+                        <span class="outfit-label chaussures">Chaussures</span>
+                        {% if chaussures.image %}
+                            <img src="{{ chaussures.image.url }}" alt="{{ chaussures.nom }}">
+                        {% else %}
+                            <div class="no-image">{{ chaussures.nom }}</div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    <!-- Si aucune section n'a été remplie, afficher l'image de la tenue ou placeholder -->
+                    {% if not haut and not bas and not chaussures %}
+                        {% if tenue.image %}
+                            <div class="outfit-item" style="height: 480px;">
+                                <img src="{{ tenue.image.url }}" alt="{{ tenue.nom }}" style="height: 100%;">
+                            </div>
+                        {% else %}
+                            <div class="outfit-item no-image" style="height: 480px;">
+                                <div>
+                                    <i class="material-icons" style="font-size: 64px; color: #B09199; margin-bottom: 10px;">checkroom</i>
+                                    <p>{{ tenue.vetements.count }} vêtement(s)</p>
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% endif %}
+
+                    {% endwith %}
+                    {% endwith %}
+                    {% endwith %}
+                {% endwith %}
+            </div>
+        </div>
+
+        <div class="tenue-info">
+            <h3>
+                {{ tenue.nom }}
+                {% if tenue.favori %}⭐{% endif %}
+            </h3>
+
+            <div class="tenue-badges">
+                <span class="badge occasion">{{ tenue.get_occasion_display }}</span>
+                <span class="badge saison">{{ tenue.get_saison_display }}</span>
+            </div>
+
+            <div class="tenue-stats">
+                <div class="stat-item">
+                    <span class="stat-label">Vêtements</span>
+                    <span class="stat-value">{{ tenue.vetements.count }}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Portages</span>
+                    <span class="stat-value">{{ tenue.nombre_fois_portee }}</span>
+                </div>
+            </div>
+
+            {% if tenue.derniere_fois_portee %}
+            <p style="font-size: 0.85rem; color: #6B6560; margin: 8px 0;">
+                <i class="material-icons tiny" style="vertical-align: middle; font-size: 16px;">schedule</i>
+                Dernière fois: {{ tenue.derniere_fois_portee|date:"d/m/Y" }}
+            </p>
+            {% endif %}
+
+            <a href="{% url 'vetements:tenue_detail' tenue.pk %}" class="btn">
+                <i class="material-icons left">visibility</i>Voir détails
+            </a>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="alert">
+    <i class="material-icons" style="font-size: 48px; margin-bottom: 10px;">style</i>
+    <p>Aucune tenue enregistrée pour le moment.</p>
+</div>
+{% endif %}
+
+<div class="actions">
+    <a href="{% url 'vetements:accueil' %}" class="btn btn-secondary">
+        <i class="material-icons left">arrow_back</i>Retour au tableau de bord
+    </a>
+    <a href="/admin/vetements/tenue/add/" class="btn">
+        <i class="material-icons left">add</i>Créer une nouvelle tenue
+    </a>
+</div>
+{% endblock %}

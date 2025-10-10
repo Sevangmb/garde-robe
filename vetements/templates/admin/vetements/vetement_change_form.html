@@ -1,0 +1,185 @@
+{% extends "admin/change_form.html" %}
+{% load static %}
+
+{% block extrahead %}
+{{ block.super }}
+<style>
+    .camera-upload-container {
+        background: linear-gradient(135deg, #B09199 0%, #8C7A9E 100%);
+        padding: 20px;
+        border-radius: 12px;
+        margin: 15px 0;
+    }
+
+    .camera-upload-container h3 {
+        color: white;
+        margin: 0 0 15px 0;
+        font-size: 1.1rem;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .upload-options {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 15px;
+    }
+
+    .upload-btn {
+        background: white;
+        border: none;
+        border-radius: 8px;
+        padding: 20px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .upload-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+
+    .upload-btn i {
+        font-size: 48px;
+        color: #B09199;
+    }
+
+    .upload-btn span {
+        color: #3A3632;
+        font-weight: 500;
+        font-size: 1rem;
+    }
+
+    .upload-btn input[type="file"] {
+        display: none;
+    }
+
+    .image-preview {
+        margin-top: 15px;
+        text-align: center;
+    }
+
+    .image-preview img {
+        max-width: 100%;
+        max-height: 300px;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .preview-label {
+        color: white;
+        font-size: 0.9rem;
+        margin-bottom: 10px;
+        display: block;
+    }
+
+    @media (max-width: 768px) {
+        .upload-options {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<!-- Material Icons -->
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const imageField = document.getElementById('id_image');
+
+    if (imageField) {
+        // Créer le conteneur personnalisé
+        const container = document.createElement('div');
+        container.className = 'camera-upload-container';
+
+        container.innerHTML = `
+            <h3>
+                <i class="material-icons">add_a_photo</i>
+                Photo du vêtement
+            </h3>
+            <div class="upload-options">
+                <label class="upload-btn" id="camera-btn">
+                    <i class="material-icons">photo_camera</i>
+                    <span>Prendre une photo</span>
+                    <input type="file" id="camera-input" accept="image/*" capture="environment">
+                </label>
+                <label class="upload-btn" id="gallery-btn">
+                    <i class="material-icons">photo_library</i>
+                    <span>Choisir une image</span>
+                    <input type="file" id="gallery-input" accept="image/*">
+                </label>
+            </div>
+            <div class="image-preview" id="image-preview" style="display: none;">
+                <span class="preview-label">Aperçu :</span>
+                <img id="preview-img" src="" alt="Aperçu">
+            </div>
+        `;
+
+        // Insérer avant le champ original
+        imageField.parentNode.insertBefore(container, imageField.parentNode.firstChild);
+
+        // Masquer le champ original mais le garder fonctionnel
+        const originalLabel = imageField.previousElementSibling;
+        if (originalLabel && originalLabel.tagName === 'LABEL') {
+            originalLabel.style.display = 'none';
+        }
+        imageField.style.display = 'none';
+
+        // Gérer la prise de photo
+        const cameraInput = document.getElementById('camera-input');
+        cameraInput.addEventListener('change', function(e) {
+            handleFileSelect(e.target.files);
+        });
+
+        // Gérer la sélection depuis la galerie
+        const galleryInput = document.getElementById('gallery-input');
+        galleryInput.addEventListener('change', function(e) {
+            handleFileSelect(e.target.files);
+        });
+
+        function handleFileSelect(files) {
+            if (files && files[0]) {
+                // Créer un nouveau DataTransfer pour mettre à jour le champ original
+                const dataTransfer = new DataTransfer();
+                dataTransfer.items.add(files[0]);
+                imageField.files = dataTransfer.files;
+
+                // Déclencher l'événement change sur le champ original
+                const event = new Event('change', { bubbles: true });
+                imageField.dispatchEvent(event);
+
+                // Afficher l'aperçu
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById('image-preview');
+                    const previewImg = document.getElementById('preview-img');
+                    previewImg.src = e.target.result;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(files[0]);
+            }
+        }
+
+        // Si une image existe déjà, l'afficher
+        const currentImageDiv = imageField.parentNode.querySelector('p.file-upload');
+        if (currentImageDiv && currentImageDiv.querySelector('a')) {
+            const currentImageLink = currentImageDiv.querySelector('a');
+            const preview = document.getElementById('image-preview');
+            const previewImg = document.getElementById('preview-img');
+            previewImg.src = currentImageLink.href;
+            preview.style.display = 'block';
+        }
+    }
+});
+</script>
+{% endblock %}
+
+{% block field_sets %}
+{{ block.super }}
+{% endblock %}

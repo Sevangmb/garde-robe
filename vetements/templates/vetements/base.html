@@ -1,0 +1,376 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Ma Garde-Robe{% endblock %}</title>
+
+    <!-- Google Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+    <!-- Materialize CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+
+    <!-- Custom CSS - Palette Pantone SS26 -->
+    <style>
+        :root {
+            --mauve-rose: #B09199;
+            --rouge-corail: #E94B5A;
+            --jaune-pastel: #F5D987;
+            --orange-mandarine: #E8874F;
+            --violet-mauve: #8C7A9E;
+            --blanc-casse: #FDFBF7;
+            --gris-clair: #F5F3F0;
+        }
+
+        body {
+            display: flex;
+            min-height: 100vh;
+            flex-direction: column;
+            background-color: var(--blanc-casse);
+        }
+        main {
+            flex: 1 0 auto;
+        }
+        .brand-logo {
+            font-weight: 600;
+        }
+        .user-badge {
+            background: linear-gradient(135deg, var(--mauve-rose) 0%, var(--violet-mauve) 100%);
+            padding: 0 15px;
+            border-radius: 20px;
+            display: inline-block;
+            line-height: 36px;
+        }
+        .stat-card {
+            text-align: center;
+            padding: 20px;
+        }
+        .stat-card h3 {
+            font-size: 3rem;
+            margin: 10px 0;
+            color: var(--violet-mauve);
+        }
+        .page-title {
+            margin: 30px 0 20px 0;
+        }
+        .message-item {
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .message-item:hover {
+            background-color: var(--gris-clair);
+        }
+        .message-item.unread {
+            background-color: rgba(176, 145, 153, 0.1);
+            border-left: 4px solid var(--mauve-rose);
+        }
+        nav .dropdown-content {
+            min-width: 200px;
+        }
+        /* Menu harmonisé Pantone */
+        nav ul li.active {
+            background-color: rgba(255,255,255,0.15);
+        }
+        .sidenav li.active {
+            background-color: rgba(176, 145, 153, 0.15);
+        }
+        .sidenav .user-view {
+            padding: 0;
+        }
+        .sidenav .subheader {
+            color: var(--violet-mauve);
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+        /* Badge pour les notifications */
+        nav .badge {
+            float: none !important;
+            margin-left: 10px;
+        }
+        /* Amélioration du dropdown utilisateur */
+        .dropdown-content li > a {
+            color: var(--mauve-rose);
+        }
+        .dropdown-content li > a:hover {
+            background-color: rgba(176, 145, 153, 0.1);
+        }
+        .dropdown-content li > a > i {
+            color: var(--violet-mauve);
+            margin-right: 10px;
+        }
+
+        /* Cards harmonisées */
+        .card {
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(176, 145, 153, 0.15);
+        }
+
+        /* Boutons harmonisés */
+        .btn, .btn-small, .btn-large, .btn-floating {
+            border-radius: 25px;
+        }
+
+        .indigo.darken-2, .indigo {
+            background: linear-gradient(135deg, var(--mauve-rose) 0%, var(--violet-mauve) 100%) !important;
+        }
+
+        .purple-text {
+            color: var(--violet-mauve) !important;
+        }
+
+        .orange-text {
+            color: var(--orange-mandarine) !important;
+        }
+
+        .amber {
+            background-color: var(--orange-mandarine) !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="indigo darken-2">
+        <div class="nav-wrapper container">
+            <a href="{% url 'vetements:accueil' %}" class="brand-logo">
+                <i class="material-icons left">checkroom</i><span class="hide-on-small-only">Ma Garde-Robe</span><span class="hide-on-med-and-up">MGR</span>
+            </a>
+            <a href="#" data-target="mobile-nav" class="sidenav-trigger"><i class="material-icons">menu</i></a>
+
+            {% if user.is_authenticated %}
+            <ul class="right hide-on-med-and-down">
+                <li class="{% if request.resolver_match.url_name == 'accueil' %}active{% endif %}">
+                    <a href="{% url 'vetements:accueil' %}" class="waves-effect tooltipped" data-position="bottom" data-tooltip="Tableau de bord">
+                        <i class="material-icons">dashboard</i>
+                    </a>
+                </li>
+                <li class="{% if request.resolver_match.url_name == 'liste_vetements' or request.resolver_match.url_name == 'detail_vetement' %}active{% endif %}">
+                    <a href="{% url 'vetements:liste_vetements' %}" class="waves-effect tooltipped" data-position="bottom" data-tooltip="Vêtements">
+                        <i class="material-icons">checkroom</i>
+                    </a>
+                </li>
+                <li class="{% if 'tenue' in request.resolver_match.url_name %}active{% endif %}">
+                    <a href="{% url 'vetements:tenues_list' %}" class="waves-effect tooltipped" data-position="bottom" data-tooltip="Tenues">
+                        <i class="material-icons">style</i>
+                    </a>
+                </li>
+                <li class="{% if 'valise' in request.resolver_match.url_name %}active{% endif %}">
+                    <a href="{% url 'vetements:valises_list' %}" class="waves-effect tooltipped" data-position="bottom" data-tooltip="Valises">
+                        <i class="material-icons">luggage</i>
+                    </a>
+                </li>
+                <li class="{% if request.resolver_match.url_name == 'entretien' %}active{% endif %}">
+                    <a href="{% url 'vetements:entretien' %}" class="waves-effect tooltipped" data-position="bottom" data-tooltip="Entretien">
+                        <i class="material-icons">local_laundry_service</i>
+                    </a>
+                </li>
+                <li class="{% if request.resolver_match.url_name == 'statistiques' %}active{% endif %}">
+                    <a href="{% url 'vetements:statistiques' %}" class="waves-effect tooltipped" data-position="bottom" data-tooltip="Statistiques">
+                        <i class="material-icons">bar_chart</i>
+                    </a>
+                </li>
+                <li class="{% if 'message' in request.resolver_match.url_name %}active{% endif %}">
+                    <a href="{% url 'vetements:messages_inbox' %}" class="waves-effect tooltipped" data-position="bottom" data-tooltip="Messages">
+                        <i class="material-icons">mail</i>
+                        {% if unread_messages_count > 0 %}
+                        <span class="new badge amber" data-badge-caption="">{{ unread_messages_count }}</span>
+                        {% endif %}
+                    </a>
+                </li>
+                {% if user.is_superuser %}
+                <li>
+                    <a href="/admin/" class="waves-effect tooltipped" data-position="bottom" data-tooltip="Administration">
+                        <i class="material-icons">admin_panel_settings</i>
+                    </a>
+                </li>
+                {% endif %}
+                <li>
+                    <a class="dropdown-trigger waves-effect tooltipped" href="#!" data-target="user-dropdown" data-position="bottom" data-tooltip="{{ user.username }}">
+                        <i class="material-icons">account_circle</i>
+                    </a>
+                </li>
+            </ul>
+            {% else %}
+            <ul class="right hide-on-med-and-down">
+                <li><a href="{% url 'vetements:login' %}" class="waves-effect"><i class="material-icons left">login</i>Connexion</a></li>
+                <li><a href="{% url 'vetements:register' %}" class="waves-effect"><i class="material-icons left">person_add</i>Inscription</a></li>
+            </ul>
+            {% endif %}
+        </div>
+    </nav>
+
+    <!-- User Dropdown -->
+    {% if user.is_authenticated %}
+    <ul id="user-dropdown" class="dropdown-content">
+        <li><a href="{% url 'vetements:user_profile' %}"><i class="material-icons">person</i>Mon Profil</a></li>
+        <li class="divider"></li>
+        <li><a href="{% url 'vetements:logout' %}"><i class="material-icons">exit_to_app</i>Déconnexion</a></li>
+    </ul>
+    {% endif %}
+
+    <!-- Mobile Sidenav -->
+    {% if user.is_authenticated %}
+    <ul class="sidenav" id="mobile-nav">
+        <li><div class="user-view">
+            <div class="background" style="background: linear-gradient(135deg, #B09199 0%, #8C7A9E 100%);">
+                <img src="https://images.unsplash.com/photo-1558769132-cb1aea8f4b06?w=800&auto=format&fit=crop&q=60" style="opacity: 0.3;">
+            </div>
+            <a href="{% url 'vetements:user_profile' %}">
+                <i class="material-icons white-text large circle" style="padding: 15px; background: linear-gradient(135deg, #B09199 0%, #8C7A9E 100%);">account_circle</i>
+            </a>
+            <a href="{% url 'vetements:user_profile' %}"><span class="white-text name" style="font-weight: 600;">{{ user.username }}</span></a>
+            <a href="{% url 'vetements:user_profile' %}"><span class="white-text email">{{ user.email|default:"Aucun email" }}</span></a>
+        </div></li>
+
+        <li class="{% if request.resolver_match.url_name == 'accueil' %}active{% endif %}">
+            <a href="{% url 'vetements:accueil' %}" class="waves-effect">
+                <i class="material-icons" style="color: #B09199;">dashboard</i>Tableau de bord
+            </a>
+        </li>
+        <li class="{% if request.resolver_match.url_name == 'liste_vetements' or request.resolver_match.url_name == 'detail_vetement' %}active{% endif %}">
+            <a href="{% url 'vetements:liste_vetements' %}" class="waves-effect">
+                <i class="material-icons" style="color: #8C7A9E;">checkroom</i>Vêtements
+            </a>
+        </li>
+        <li class="{% if 'tenue' in request.resolver_match.url_name %}active{% endif %}">
+            <a href="{% url 'vetements:tenues_list' %}" class="waves-effect">
+                <i class="material-icons purple-text" style="color: #E94B5A;">style</i>Tenues
+            </a>
+        </li>
+        <li class="{% if 'valise' in request.resolver_match.url_name %}active{% endif %}">
+            <a href="{% url 'vetements:valises_list' %}" class="waves-effect">
+                <i class="material-icons orange-text" style="color: #E8874F;">luggage</i>Valises
+            </a>
+        </li>
+        <li class="{% if request.resolver_match.url_name == 'entretien' %}active{% endif %}">
+            <a href="{% url 'vetements:entretien' %}" class="waves-effect">
+                <i class="material-icons" style="color: #F5D987;">local_laundry_service</i>Entretien
+            </a>
+        </li>
+        <li class="{% if request.resolver_match.url_name == 'statistiques' %}active{% endif %}">
+            <a href="{% url 'vetements:statistiques' %}" class="waves-effect">
+                <i class="material-icons" style="color: #8C7A9E;">bar_chart</i>Statistiques
+            </a>
+        </li>
+        <li class="{% if 'message' in request.resolver_match.url_name %}active{% endif %}">
+            <a href="{% url 'vetements:messages_inbox' %}" class="waves-effect">
+                <i class="material-icons" style="color: #B09199;">mail</i>Messages
+                {% if unread_messages_count > 0 %}
+                <span class="new badge amber" data-badge-caption="">{{ unread_messages_count }}</span>
+                {% endif %}
+            </a>
+        </li>
+
+        {% if user.is_superuser %}
+        <li><div class="divider"></div></li>
+        <li class="subheader">Administration</li>
+        <li><a href="/admin/" class="waves-effect"><i class="material-icons red-text">admin_panel_settings</i>Panneau d'admin</a></li>
+        {% endif %}
+
+        <li><div class="divider"></div></li>
+        <li><a href="{% url 'vetements:user_profile' %}" class="waves-effect"><i class="material-icons grey-text">person</i>Mon Profil</a></li>
+        <li><a href="{% url 'vetements:logout' %}" class="waves-effect"><i class="material-icons grey-text">exit_to_app</i>Déconnexion</a></li>
+    </ul>
+    {% else %}
+    <ul class="sidenav" id="mobile-nav">
+        <li>
+            <div class="user-view">
+                <div class="background" style="background: linear-gradient(135deg, #B09199 0%, #8C7A9E 100%);">
+                    <img src="https://images.unsplash.com/photo-1558769132-cb1aea8f4b06?w=800&auto=format&fit=crop&q=60" style="opacity: 0.3;">
+                </div>
+                <a href="#"><i class="material-icons white-text large">checkroom</i></a>
+                <a href="#"><span class="white-text name" style="font-weight: 600;">Ma Garde-Robe</span></a>
+                <a href="#"><span class="white-text email">Bienvenue!</span></a>
+            </div>
+        </li>
+        <li><a href="{% url 'vetements:login' %}" class="waves-effect"><i class="material-icons" style="color: #B09199;">login</i>Connexion</a></li>
+        <li><a href="{% url 'vetements:register' %}" class="waves-effect"><i class="material-icons" style="color: #8C7A9E;">person_add</i>Inscription</a></li>
+    </ul>
+    {% endif %}
+
+    <!-- Main Content -->
+    <main>
+        <div class="container">
+            <!-- Messages Flash -->
+            {% if messages %}
+            <div style="margin-top: 20px;">
+                {% for message in messages %}
+                <div class="card-panel {% if message.tags == 'success' %}green lighten-4 green-text text-darken-4{% elif message.tags == 'error' %}red lighten-4 red-text text-darken-4{% elif message.tags == 'warning' %}orange lighten-4 orange-text text-darken-4{% else %}blue lighten-4 blue-text text-darken-4{% endif %}">
+                    <i class="material-icons left">
+                        {% if message.tags == 'success' %}check_circle{% elif message.tags == 'error' %}error{% elif message.tags == 'warning' %}warning{% else %}info{% endif %}
+                    </i>
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% block content %}
+            {% endblock %}
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="page-footer indigo darken-2">
+        <div class="footer-copyright">
+            <div class="container">
+                © 2025 Ma Garde-Robe - Application personnelle de gestion de vêtements
+                <a class="grey-text text-lighten-4 right" href="{% url 'vetements:accueil' %}">Accueil</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Materialize JavaScript -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+
+    <!-- Initialize Materialize Components -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Sidenav
+            var elems = document.querySelectorAll('.sidenav');
+            M.Sidenav.init(elems);
+
+            // Dropdown
+            var dropdowns = document.querySelectorAll('.dropdown-trigger');
+            M.Dropdown.init(dropdowns, {
+                coverTrigger: false,
+                constrainWidth: false
+            });
+
+            // Select
+            var selects = document.querySelectorAll('select');
+            M.FormSelect.init(selects);
+
+            // Modals
+            var modals = document.querySelectorAll('.modal');
+            M.Modal.init(modals);
+
+            // Collapsible
+            var collapsibles = document.querySelectorAll('.collapsible');
+            M.Collapsible.init(collapsibles);
+
+            // Tooltips
+            var tooltips = document.querySelectorAll('.tooltipped');
+            M.Tooltip.init(tooltips);
+
+            // Datepicker
+            var datepickers = document.querySelectorAll('.datepicker');
+            M.Datepicker.init(datepickers, {
+                format: 'dd/mm/yyyy',
+                i18n: {
+                    cancel: 'Annuler',
+                    done: 'Ok',
+                    months: ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'],
+                    monthsShort: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin', 'Juil', 'Aoû', 'Sep', 'Oct', 'Nov', 'Déc'],
+                    weekdays: ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'],
+                    weekdaysShort: ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'],
+                    weekdaysAbbrev: ['D', 'L', 'M', 'M', 'J', 'V', 'S']
+                }
+            });
+        });
+    </script>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

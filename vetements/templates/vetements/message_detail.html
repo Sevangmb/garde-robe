@@ -1,0 +1,112 @@
+{% extends 'vetements/base.html' %}
+
+{% block title %}{{ message.sujet }} - Ma Garde-Robe{% endblock %}
+
+{% block content %}
+<div class="page-title">
+    <h2 class="indigo-text text-darken-2">
+        <i class="material-icons left">mail_outline</i>Message
+    </h2>
+</div>
+
+<div class="row">
+    <div class="col s12 l10 offset-l1">
+        <div class="card">
+            <div class="card-content">
+                <!-- En-tête du message -->
+                <div class="card-title indigo-text">
+                    <i class="material-icons left">subject</i>{{ message.sujet }}
+                </div>
+
+                <!-- Métadonnées -->
+                <div class="divider" style="margin: 20px 0;"></div>
+
+                <div class="row" style="margin-bottom: 30px;">
+                    <div class="col s12 m6">
+                        <p>
+                            <i class="material-icons tiny indigo-text">person</i>
+                            <strong>De:</strong> {{ message.expediteur.username }}
+                        </p>
+                        <p>
+                            <i class="material-icons tiny indigo-text">person_outline</i>
+                            <strong>À:</strong> {{ message.destinataire.username }}
+                        </p>
+                    </div>
+                    <div class="col s12 m6">
+                        <p>
+                            <i class="material-icons tiny indigo-text">schedule</i>
+                            <strong>Envoyé le:</strong> {{ message.date_envoi|date:"d/m/Y à H:i" }}
+                        </p>
+                        {% if message.lu and message.date_lecture %}
+                        <p>
+                            <i class="material-icons tiny green-text">done_all</i>
+                            <strong>Lu le:</strong> {{ message.date_lecture|date:"d/m/Y à H:i" }}
+                        </p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Contenu du message -->
+                <div class="divider" style="margin: 20px 0;"></div>
+
+                <div class="card-panel grey lighten-5" style="padding: 30px; border-left: 4px solid #5e35b1;">
+                    <p style="white-space: pre-wrap; margin: 0; line-height: 1.8;">{{ message.contenu }}</p>
+                </div>
+
+                <!-- Fil de conversation si réponse -->
+                {% if message.en_reponse_a %}
+                <div style="margin-top: 30px;">
+                    <h6 class="grey-text">
+                        <i class="material-icons tiny">history</i> En réponse à
+                    </h6>
+                    <div class="card-panel blue lighten-5" style="padding: 15px;">
+                        <p class="grey-text text-darken-2">
+                            <strong>{{ message.en_reponse_a.sujet }}</strong><br>
+                            De: {{ message.en_reponse_a.expediteur.username }} -
+                            {{ message.en_reponse_a.date_envoi|date:"d/m/Y à H:i" }}
+                        </p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Actions -->
+            <div class="card-action">
+                <a href="{% url 'vetements:message_reply' message.pk %}" class="btn waves-effect waves-light indigo darken-2">
+                    <i class="material-icons left">reply</i>Répondre
+                </a>
+                <a href="{% url 'vetements:messages_inbox' %}" class="btn waves-effect waves-light grey">
+                    <i class="material-icons left">arrow_back</i>Retour
+                </a>
+                <a href="{% url 'vetements:message_delete' message.pk %}" class="btn waves-effect waves-light red" onclick="return confirm('Voulez-vous vraiment archiver ce message?')">
+                    <i class="material-icons left">delete</i>Archiver
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Boutons flottants avec menu -->
+<div class="fixed-action-btn">
+    <a class="btn-floating btn-large indigo darken-2">
+        <i class="material-icons">menu</i>
+    </a>
+    <ul>
+        <li>
+            <a href="{% url 'vetements:message_reply' message.pk %}" class="btn-floating blue tooltipped" data-position="left" data-tooltip="Répondre">
+                <i class="material-icons">reply</i>
+            </a>
+        </li>
+        <li>
+            <a href="{% url 'vetements:message_delete' message.pk %}" class="btn-floating red tooltipped" data-position="left" data-tooltip="Archiver" onclick="return confirm('Voulez-vous vraiment archiver ce message?')">
+                <i class="material-icons">delete</i>
+            </a>
+        </li>
+        <li>
+            <a href="{% url 'vetements:messages_inbox' %}" class="btn-floating grey tooltipped" data-position="left" data-tooltip="Retour">
+                <i class="material-icons">arrow_back</i>
+            </a>
+        </li>
+    </ul>
+</div>
+{% endblock %}

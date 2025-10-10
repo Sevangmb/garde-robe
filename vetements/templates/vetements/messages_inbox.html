@@ -1,0 +1,345 @@
+{% extends 'vetements/base.html' %}
+
+{% block title %}Messagerie - Ma Garde-Robe{% endblock %}
+
+{% block content %}
+<style>
+    .messages-container {
+        display: flex;
+        height: calc(100vh - 200px);
+        min-height: 600px;
+        background: white;
+        border-radius: 4px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+
+    /* Menu latéral gauche */
+    .messages-sidebar {
+        width: 250px;
+        background: #f8f9fa;
+        border-right: 1px solid #e0e0e0;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .messages-sidebar-header {
+        padding: 20px;
+        background: linear-gradient(135deg, #B09199 0%, #8C7A9E 100%);
+        color: white;
+    }
+
+    .messages-sidebar-header h5 {
+        margin: 0;
+        font-size: 1.2rem;
+    }
+
+    .messages-nav {
+        flex: 1;
+        overflow-y: auto;
+    }
+
+    .messages-nav a {
+        display: flex;
+        align-items: center;
+        padding: 12px 20px;
+        color: #424242;
+        text-decoration: none;
+        transition: background 0.2s;
+        border-left: 3px solid transparent;
+    }
+
+    .messages-nav a:hover {
+        background: #e8eaf6;
+    }
+
+    .messages-nav a.active {
+        background: rgba(176, 145, 153, 0.15);
+        border-left-color: #B09199;
+        color: #8C7A9E;
+        font-weight: 500;
+    }
+
+    .messages-nav a i {
+        margin-right: 12px;
+    }
+
+    .messages-nav .badge {
+        margin-left: auto;
+        background: #ff9800;
+        color: white;
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 0.75rem;
+    }
+
+    /* Liste des messages */
+    .messages-list {
+        width: 400px;
+        border-right: 1px solid #e0e0e0;
+        display: flex;
+        flex-direction: column;
+        background: white;
+    }
+
+    .messages-list-header {
+        padding: 15px 20px;
+        border-bottom: 1px solid #e0e0e0;
+        background: white;
+    }
+
+    .messages-list-header h6 {
+        margin: 0 0 10px 0;
+        font-size: 1.1rem;
+        color: #424242;
+    }
+
+    .messages-list-items {
+        flex: 1;
+        overflow-y: auto;
+    }
+
+    .message-item {
+        padding: 15px 20px;
+        border-bottom: 1px solid #f0f0f0;
+        cursor: pointer;
+        transition: background 0.2s;
+        position: relative;
+    }
+
+    .message-item:hover {
+        background: #f8f9fa;
+    }
+
+    .message-item.active {
+        background: rgba(176, 145, 153, 0.15);
+        border-left: 3px solid #B09199;
+    }
+
+    .message-item.unread {
+        background: rgba(176, 145, 153, 0.1);
+        font-weight: 500;
+    }
+
+    .message-item-sender {
+        font-weight: 500;
+        color: #3A3632;
+        margin-bottom: 4px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .message-item-subject {
+        color: #6B6560;
+        margin-bottom: 4px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .message-item-date {
+        font-size: 0.85rem;
+        color: #6B6560;
+    }
+
+    .message-item .unread-badge {
+        width: 8px;
+        height: 8px;
+        background: #B09199;
+        border-radius: 50%;
+        display: inline-block;
+    }
+
+    /* Panneau de lecture */
+    .messages-reading-pane {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        background: white;
+    }
+
+    .messages-reading-header {
+        padding: 15px 30px;
+        border-bottom: 1px solid #e0e0e0;
+        background: white;
+    }
+
+    .messages-reading-header h5 {
+        margin: 0 0 10px 0;
+        color: #8C7A9E;
+        font-size: 1.3rem;
+    }
+
+    .messages-reading-meta {
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        color: #6B6560;
+        font-size: 0.9rem;
+    }
+
+    .messages-reading-content {
+        flex: 1;
+        padding: 30px;
+        overflow-y: auto;
+        line-height: 1.6;
+    }
+
+    .messages-reading-actions {
+        padding: 15px 30px;
+        border-top: 1px solid #e0e0e0;
+        background: #fafafa;
+    }
+
+    .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        color: #9e9e9e;
+    }
+
+    .empty-state i {
+        font-size: 80px;
+        margin-bottom: 20px;
+    }
+
+    @media (max-width: 992px) {
+        .messages-sidebar {
+            display: none;
+        }
+        .messages-list {
+            width: 100%;
+        }
+        .messages-reading-pane {
+            display: none;
+        }
+    }
+</style>
+
+<div class="messages-container">
+    <!-- Menu latéral -->
+    <div class="messages-sidebar">
+        <div class="messages-sidebar-header">
+            <h5><i class="material-icons" style="vertical-align: middle;">mail</i> Messagerie</h5>
+        </div>
+        <div class="messages-nav">
+            <a href="{% url 'vetements:messages_inbox' %}" class="active">
+                <i class="material-icons">inbox</i>
+                <span>Boîte de réception</span>
+                {% if non_lus > 0 %}
+                <span class="badge">{{ non_lus }}</span>
+                {% endif %}
+            </a>
+            <a href="{% url 'vetements:messages_sent' %}">
+                <i class="material-icons">send</i>
+                <span>Envoyés</span>
+            </a>
+            <a href="{% url 'vetements:message_compose' %}" style="margin-top: 20px; background: #5e35b1; color: white;">
+                <i class="material-icons">edit</i>
+                <span>Nouveau message</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Liste des messages -->
+    <div class="messages-list">
+        <div class="messages-list-header">
+            <h6>Boîte de réception</h6>
+            <div style="display: flex; gap: 10px;">
+                <a href="{% url 'vetements:message_compose' %}" class="btn-small waves-effect waves-light indigo darken-2">
+                    <i class="material-icons left">edit</i>Nouveau
+                </a>
+            </div>
+        </div>
+
+        <div class="messages-list-items">
+            {% if messages %}
+                {% for msg in messages %}
+                <div class="message-item {% if not msg.lu %}unread{% endif %} {% if selected_message and selected_message.pk == msg.pk %}active{% endif %}" onclick="window.location.href='{% url 'vetements:messages_inbox' %}?msg={{ msg.pk }}'">
+                    <div class="message-item-sender">
+                        <span>
+                            {% if not msg.lu %}<span class="unread-badge"></span> {% endif %}
+                            {{ msg.expediteur.username }}
+                        </span>
+                        <span class="message-item-date">{{ msg.date_envoi|date:"d/m H:i" }}</span>
+                    </div>
+                    <div class="message-item-subject">{{ msg.sujet }}</div>
+                    <div class="message-item-date" style="margin-top: 4px; font-size: 0.8rem;">
+                        {{ msg.contenu|truncatewords:10 }}
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <i class="material-icons">mail_outline</i>
+                    <h6>Aucun message</h6>
+                    <p>Votre boîte de réception est vide</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Panneau de lecture -->
+    <div class="messages-reading-pane">
+        {% if selected_message %}
+        <div class="messages-reading-header">
+            <h5>{{ selected_message.sujet }}</h5>
+            <div class="messages-reading-meta">
+                <span>
+                    <i class="material-icons tiny">person</i>
+                    {{ selected_message.expediteur.username }}
+                </span>
+                <span>
+                    <i class="material-icons tiny">schedule</i>
+                    {{ selected_message.date_envoi|date:"d/m/Y à H:i" }}
+                </span>
+                {% if selected_message.lu and selected_message.date_lecture %}
+                <span>
+                    <i class="material-icons tiny green-text">done_all</i>
+                    Lu le {{ selected_message.date_lecture|date:"d/m/Y à H:i" }}
+                </span>
+                {% endif %}
+            </div>
+        </div>
+        <div class="messages-reading-content">
+            <p style="white-space: pre-wrap; line-height: 1.8;">{{ selected_message.contenu }}</p>
+
+            {% if selected_message.en_reponse_a %}
+            <div style="margin-top: 30px; padding: 15px; background: #f5f9ff; border-left: 3px solid #2196f3;">
+                <p class="grey-text text-darken-2" style="margin: 0;">
+                    <i class="material-icons tiny">history</i>
+                    <strong>En réponse à: {{ selected_message.en_reponse_a.sujet }}</strong><br>
+                    De: {{ selected_message.en_reponse_a.expediteur.username }} -
+                    {{ selected_message.en_reponse_a.date_envoi|date:"d/m/Y à H:i" }}
+                </p>
+            </div>
+            {% endif %}
+        </div>
+        <div class="messages-reading-actions">
+            <a href="{% url 'vetements:message_reply' selected_message.pk %}" class="btn waves-effect waves-light indigo darken-2">
+                <i class="material-icons left">reply</i>Répondre
+            </a>
+            <a href="{% url 'vetements:message_delete' selected_message.pk %}" class="btn waves-effect waves-light red" onclick="return confirm('Voulez-vous vraiment archiver ce message?')">
+                <i class="material-icons left">delete</i>Archiver
+            </a>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="material-icons">drafts</i>
+            <h6>Sélectionnez un message</h6>
+            <p>Cliquez sur un message pour le lire</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Bouton flottant mobile -->
+<div class="fixed-action-btn hide-on-large-only">
+    <a class="btn-floating btn-large waves-effect waves-light indigo darken-2 tooltipped" data-position="left" data-tooltip="Nouveau message" href="{% url 'vetements:message_compose' %}">
+        <i class="material-icons">edit</i>
+    </a>
+</div>
+{% endblock %}

@@ -1,0 +1,121 @@
+{% extends 'vetements/base.html' %}
+
+{% block title %}Entretien - Ma Garde-Robe{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Entretien de la Garde-Robe</h1>
+    <p class="subtitle">Suivi des vêtements nécessitant votre attention</p>
+</div>
+
+{% if a_laver %}
+<div class="section">
+    <h2>🧺 À laver ({{ a_laver.count }})</h2>
+    <div class="vetements-grid">
+        {% for vetement in a_laver %}
+        <div class="vetement-card">
+            {% if vetement.image %}
+                <img src="{{ vetement.image.url }}" alt="{{ vetement.nom }}">
+            {% else %}
+                <div class="no-image">Pas d'image</div>
+            {% endif %}
+            <div class="vetement-info">
+                <h3>{{ vetement.nom }}</h3>
+                <p class="categorie">{{ vetement.categorie.nom }}</p>
+                {% if vetement.couleur %}
+                <p class="reference">Couleur: {{ vetement.couleur.nom }}</p>
+                {% endif %}
+                <a href="{% url 'vetements:detail_vetement' vetement.pk %}" class="btn">Voir détails</a>
+                <a href="/admin/vetements/vetement/{{ vetement.pk }}/change/" class="btn btn-small">Modifier</a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{% if a_repasser %}
+<div class="section">
+    <h2>👔 À repasser ({{ a_repasser.count }})</h2>
+    <div class="vetements-grid">
+        {% for vetement in a_repasser %}
+        <div class="vetement-card">
+            {% if vetement.image %}
+                <img src="{{ vetement.image.url }}" alt="{{ vetement.nom }}">
+            {% else %}
+                <div class="no-image">Pas d'image</div>
+            {% endif %}
+            <div class="vetement-info">
+                <h3>{{ vetement.nom }}</h3>
+                <p class="categorie">{{ vetement.categorie.nom }}</p>
+                <a href="{% url 'vetements:detail_vetement' vetement.pk %}" class="btn">Voir détails</a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{% if a_reparer %}
+<div class="section">
+    <h2>🔧 À réparer ({{ a_reparer.count }})</h2>
+    <div class="vetements-grid">
+        {% for vetement in a_reparer %}
+        <div class="vetement-card">
+            {% if vetement.image %}
+                <img src="{{ vetement.image.url }}" alt="{{ vetement.nom }}">
+            {% else %}
+                <div class="no-image">Pas d'image</div>
+            {% endif %}
+            <div class="vetement-info">
+                <h3>{{ vetement.nom }}</h3>
+                <p class="categorie">{{ vetement.categorie.nom }}</p>
+                <p class="stock danger">État: À réparer</p>
+                <a href="{% url 'vetements:detail_vetement' vetement.pk %}" class="btn">Voir détails</a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+{% if pretes %}
+<div class="section">
+    <h2>👤 Vêtements prêtés ({{ pretes.count }})</h2>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Vêtement</th>
+                <th>Catégorie</th>
+                <th>Prêté à</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for vetement in pretes %}
+            <tr>
+                <td><strong>{{ vetement.nom }}</strong></td>
+                <td>{{ vetement.categorie.nom }}</td>
+                <td>{{ vetement.prete_a|default:"Non spécifié" }}</td>
+                <td>
+                    <a href="{% url 'vetements:detail_vetement' vetement.pk %}" class="btn btn-small">Voir</a>
+                    <a href="/admin/vetements/vetement/{{ vetement.pk }}/change/" class="btn btn-small btn-primary">Modifier</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+{% if not a_laver and not a_repasser and not a_reparer and not pretes %}
+<div class="alert success">
+    <strong>Excellent!</strong> Aucun vêtement ne nécessite d'entretien pour le moment.
+</div>
+{% endif %}
+
+<div class="actions">
+    <a href="{% url 'vetements:accueil' %}" class="btn btn-secondary">Retour au tableau de bord</a>
+    <a href="{% url 'vetements:liste_vetements' %}" class="btn">Voir ma garde-robe</a>
+</div>
+{% endblock %}
