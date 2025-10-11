@@ -1,2 +1,18 @@
+# Ma Garde-Robe - Requirements
+# Python 3.11+
+
+# Django Framework
 Django>=4.2,<5.0
-Pillow>=10.0.0
+pillow>=11.0.0  # Image processing for clothing photos
+
+# Database (optionnel pour production)
+# psycopg2-binary>=2.9  # PostgreSQL
+# mysqlclient>=2.1  # MySQL
+
+# Development tools (optionnel)
+# django-debug-toolbar>=4.0
+# coverage>=7.0  # Code coverage
+
+# Deployment (optionnel)
+# gunicorn>=21.0  # WSGI HTTP Server
+# whitenoise>=6.0  # Static files serving
