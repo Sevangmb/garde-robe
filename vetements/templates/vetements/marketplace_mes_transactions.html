@@ -1,0 +1,449 @@
+{% extends 'vetements/base.html' %}
+
+{% block title %}Mes transactions - Ma Garde-Robe{% endblock %}
+
+{% block content %}
+<style>
+    :root {
+        --mauve-rose: #B09199;
+        --rouge-corail: #E94B5A;
+        --jaune-pastel: #F5D987;
+        --orange-mandarine: #E8874F;
+        --violet-mauve: #8C7A9E;
+        --beige-clair: #FDFBF7;
+        --gris-chaud: #6B6560;
+        --gris-clair: #F5F3F0;
+    }
+
+    .transactions-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .transactions-header {
+        background: linear-gradient(135deg, var(--orange-mandarine) 0%, var(--rouge-corail) 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 12px rgba(232, 135, 79, 0.3);
+    }
+
+    .transactions-header h1 {
+        margin: 0 0 15px 0;
+        font-size: 2rem;
+        font-weight: 300;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .tabs {
+        display: flex;
+        gap: 10px;
+        margin-top: 20px;
+    }
+
+    .tab {
+        padding: 10px 20px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.3s;
+        border: 2px solid transparent;
+    }
+
+    .tab:hover {
+        background: rgba(255, 255, 255, 0.3);
+    }
+
+    .tab.active {
+        background: white;
+        color: var(--orange-mandarine);
+        font-weight: 600;
+    }
+
+    .transactions-list {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .transaction-card {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        display: grid;
+        grid-template-columns: 100px 1fr auto;
+        gap: 20px;
+        align-items: center;
+        transition: all 0.3s;
+    }
+
+    .transaction-card:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    }
+
+    .transaction-image {
+        width: 100px;
+        height: 100px;
+        border-radius: 8px;
+        background: var(--gris-clair);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+    }
+
+    .transaction-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .transaction-details {
+        flex: 1;
+    }
+
+    .transaction-titre {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: var(--gris-chaud);
+        margin: 0 0 8px 0;
+    }
+
+    .transaction-info {
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap;
+        margin-bottom: 10px;
+    }
+
+    .info-item {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 0.9rem;
+        color: #666;
+    }
+
+    .info-item i {
+        font-size: 18px;
+        color: var(--orange-mandarine);
+    }
+
+    .transaction-status {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 10px;
+    }
+
+    .status-badge {
+        padding: 8px 15px;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .status-en-cours {
+        background: rgba(255, 193, 7, 0.2);
+        color: #F57C00;
+    }
+
+    .status-acceptee {
+        background: rgba(76, 175, 80, 0.2);
+        color: #388E3C;
+    }
+
+    .status-refusee {
+        background: rgba(244, 67, 54, 0.2);
+        color: #D32F2F;
+    }
+
+    .status-annulee {
+        background: rgba(158, 158, 158, 0.2);
+        color: #616161;
+    }
+
+    .status-finalisee {
+        background: rgba(140, 122, 158, 0.2);
+        color: var(--violet-mauve);
+    }
+
+    .transaction-prix {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: var(--rouge-corail);
+    }
+
+    .transaction-date {
+        font-size: 0.85rem;
+        color: #999;
+    }
+
+    .btn {
+        padding: 8px 15px;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        transition: all 0.3s;
+        font-size: 0.9rem;
+    }
+
+    .btn-primary {
+        background: var(--rouge-corail);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: var(--orange-mandarine);
+    }
+
+    .btn-secondary {
+        background: var(--gris-clair);
+        color: var(--gris-chaud);
+    }
+
+    .btn-secondary:hover {
+        background: #e0e0e0;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .empty-state i {
+        font-size: 80px;
+        color: var(--orange-mandarine);
+        margin-bottom: 20px;
+    }
+
+    .tab-content {
+        display: none;
+    }
+
+    .tab-content.active {
+        display: block;
+    }
+
+    .transaction-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 10px;
+    }
+</style>
+
+<div class="transactions-container">
+    <div class="transactions-header">
+        <h1>
+            <i class="material-icons" style="font-size: 2.5rem;">history</i>
+            Mes transactions
+        </h1>
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('achats')">
+                <i class="material-icons">shopping_bag</i>
+                Achats ({{ transactions_achat.count }})
+            </div>
+            <div class="tab" onclick="switchTab('ventes')">
+                <i class="material-icons">sell</i>
+                Ventes ({{ transactions_vente.count }})
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab Achats -->
+    <div id="achats-content" class="tab-content active">
+        {% if transactions_achat %}
+        <div class="transactions-list">
+            {% for transaction in transactions_achat %}
+            <div class="transaction-card">
+                <a href="{% url 'vetements:marketplace_annonce_detail' transaction.annonce.id %}" class="transaction-image">
+                    {% if transaction.annonce.vetement.image %}
+                    <img src="{{ transaction.annonce.vetement.image.url }}" alt="{{ transaction.annonce.vetement.nom }}">
+                    {% else %}
+                    <i class="material-icons" style="font-size: 50px; color: var(--orange-mandarine);">checkroom</i>
+                    {% endif %}
+                </a>
+
+                <div class="transaction-details">
+                    <h3 class="transaction-titre">{{ transaction.annonce.vetement.nom }}</h3>
+                    <div class="transaction-info">
+                        <div class="info-item">
+                            <i class="material-icons">person</i>
+                            Vendeur: {{ transaction.annonce.vendeur.username }}
+                        </div>
+                        <div class="info-item">
+                            <i class="material-icons">schedule</i>
+                            {{ transaction.date_creation|date:"d/m/Y" }}
+                        </div>
+                        {% if transaction.mode_livraison %}
+                        <div class="info-item">
+                            <i class="material-icons">local_shipping</i>
+                            {{ transaction.get_mode_livraison_display }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% if transaction.notes %}
+                    <p style="color: #666; font-size: 0.9rem; margin: 5px 0;">{{ transaction.notes|truncatewords:20 }}</p>
+                    {% endif %}
+                </div>
+
+                <div class="transaction-status">
+                    <div class="transaction-prix">{{ transaction.prix_final }}€</div>
+                    <span class="status-badge status-{{ transaction.statut }}">
+                        {% if transaction.statut == 'en_cours' %}
+                        <i class="material-icons" style="font-size: 16px;">schedule</i>
+                        En cours
+                        {% elif transaction.statut == 'acceptee' %}
+                        <i class="material-icons" style="font-size: 16px;">check_circle</i>
+                        Acceptée
+                        {% elif transaction.statut == 'refusee' %}
+                        <i class="material-icons" style="font-size: 16px;">cancel</i>
+                        Refusée
+                        {% elif transaction.statut == 'annulee' %}
+                        <i class="material-icons" style="font-size: 16px;">block</i>
+                        Annulée
+                        {% elif transaction.statut == 'finalisee' %}
+                        <i class="material-icons" style="font-size: 16px;">done_all</i>
+                        Finalisée
+                        {% endif %}
+                    </span>
+                    <div class="transaction-actions">
+                        <a href="{% url 'vetements:message_compose_to' transaction.annonce.vendeur.id %}" class="btn btn-primary">
+                            <i class="material-icons">message</i>
+                            Contacter
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="material-icons">shopping_bag</i>
+            <h2>Aucun achat</h2>
+            <p>Vous n'avez pas encore effectué d'achat sur le marketplace.</p>
+            <a href="{% url 'vetements:marketplace_liste' %}" class="btn btn-primary" style="margin-top: 20px;">
+                <i class="material-icons">store</i>
+                Explorer le marketplace
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Tab Ventes -->
+    <div id="ventes-content" class="tab-content">
+        {% if transactions_vente %}
+        <div class="transactions-list">
+            {% for transaction in transactions_vente %}
+            <div class="transaction-card">
+                <a href="{% url 'vetements:marketplace_annonce_detail' transaction.annonce.id %}" class="transaction-image">
+                    {% if transaction.annonce.vetement.image %}
+                    <img src="{{ transaction.annonce.vetement.image.url }}" alt="{{ transaction.annonce.vetement.nom }}">
+                    {% else %}
+                    <i class="material-icons" style="font-size: 50px; color: var(--orange-mandarine);">checkroom</i>
+                    {% endif %}
+                </a>
+
+                <div class="transaction-details">
+                    <h3 class="transaction-titre">{{ transaction.annonce.vetement.nom }}</h3>
+                    <div class="transaction-info">
+                        <div class="info-item">
+                            <i class="material-icons">person</i>
+                            Acheteur: {{ transaction.acheteur.username }}
+                        </div>
+                        <div class="info-item">
+                            <i class="material-icons">schedule</i>
+                            {{ transaction.date_creation|date:"d/m/Y" }}
+                        </div>
+                        {% if transaction.mode_livraison %}
+                        <div class="info-item">
+                            <i class="material-icons">local_shipping</i>
+                            {{ transaction.get_mode_livraison_display }}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% if transaction.notes %}
+                    <p style="color: #666; font-size: 0.9rem; margin: 5px 0;">{{ transaction.notes|truncatewords:20 }}</p>
+                    {% endif %}
+                </div>
+
+                <div class="transaction-status">
+                    <div class="transaction-prix">{{ transaction.prix_final }}€</div>
+                    <span class="status-badge status-{{ transaction.statut }}">
+                        {% if transaction.statut == 'en_cours' %}
+                        <i class="material-icons" style="font-size: 16px;">schedule</i>
+                        En cours
+                        {% elif transaction.statut == 'acceptee' %}
+                        <i class="material-icons" style="font-size: 16px;">check_circle</i>
+                        Acceptée
+                        {% elif transaction.statut == 'refusee' %}
+                        <i class="material-icons" style="font-size: 16px;">cancel</i>
+                        Refusée
+                        {% elif transaction.statut == 'annulee' %}
+                        <i class="material-icons" style="font-size: 16px;">block</i>
+                        Annulée
+                        {% elif transaction.statut == 'finalisee' %}
+                        <i class="material-icons" style="font-size: 16px;">done_all</i>
+                        Finalisée
+                        {% endif %}
+                    </span>
+                    <div class="transaction-actions">
+                        <a href="{% url 'vetements:message_compose_to' transaction.acheteur.id %}" class="btn btn-primary">
+                            <i class="material-icons">message</i>
+                            Contacter
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="material-icons">sell</i>
+            <h2>Aucune vente</h2>
+            <p>Vous n'avez pas encore vendu d'article sur le marketplace.</p>
+            <a href="{% url 'vetements:marketplace_mes_annonces' %}" class="btn btn-primary" style="margin-top: 20px;">
+                <i class="material-icons">inventory</i>
+                Mes annonces
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function switchTab(tabName) {
+    // Cacher tous les contenus
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+
+    // Désactiver tous les tabs
+    document.querySelectorAll('.tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+
+    // Activer le contenu sélectionné
+    document.getElementById(tabName + '-content').classList.add('active');
+
+    // Activer le tab sélectionné
+    event.target.closest('.tab').classList.add('active');
+}
+</script>
+{% endblock %}

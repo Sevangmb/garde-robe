@@ -1,0 +1,334 @@
+{% extends 'vetements/base.html' %}
+
+{% block title %}{{ title }} - Ma Garde-Robe{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>🧳 {{ title }}</h1>
+    <p class="subtitle">
+        Voyage vers <strong>{{ valise.destination }}</strong> - 
+        {{ valise.date_depart|date:"d/m/Y" }} au {{ valise.date_retour|date:"d/m/Y" }}
+        ({{ valise.duree_sejour }} jour(s))
+    </p>
+    {% if valise.meteo_prevue %}
+    <p class="weather-info">🌤️ {{ valise.meteo_prevue }}</p>
+    {% endif %}
+</div>
+
+<div class="content-form-section">
+    <form method="post" class="valise-content-form">
+        {% csrf_token %}
+        
+        <div class="section-tabs">
+            <button type="button" class="tab-btn active" data-tab="vetements">👕 Vêtements</button>
+            {% if form.tenues %}
+            <button type="button" class="tab-btn" data-tab="tenues">👔 Tenues complètes</button>
+            {% endif %}
+        </div>
+
+        <div id="vetements-tab" class="tab-content active">
+            <h3>Sélectionnez vos vêtements</h3>
+            <p class="help-text">Choisissez les vêtements que vous souhaitez emporter pour ce voyage.</p>
+            
+            {% for field in form %}
+                {% if field.name != 'tenues' %}
+                <div class="category-section">
+                    <h4>{{ field.label }}</h4>
+                    <div class="items-grid">
+                        {{ field }}
+                    </div>
+                    {% if field.errors %}
+                        <div class="error">{{ field.errors }}</div>
+                    {% endif %}
+                </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+
+        {% if form.tenues %}
+        <div id="tenues-tab" class="tab-content">
+            <h3>Tenues complètes</h3>
+            <p class="help-text">Sélectionnez des tenues déjà composées pour simplifier votre préparation.</p>
+            
+            <div class="category-section">
+                <div class="items-grid">
+                    {{ form.tenues }}
+                </div>
+                {% if form.tenues.errors %}
+                    <div class="error">{{ form.tenues.errors }}</div>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="form-actions">
+            <a href="{% url 'vetements:valise_detail' valise.pk %}" class="btn btn-secondary">Annuler</a>
+            <button type="submit" class="btn btn-success">Sauvegarder la sélection</button>
+        </div>
+    </form>
+</div>
+
+<div class="valise-summary">
+    <h3>📊 Résumé actuel</h3>
+    <div class="summary-stats">
+        <div class="stat">
+            <span class="number">{{ valise.nombre_vetements }}</span>
+            <span class="label">Vêtement(s)</span>
+        </div>
+        <div class="stat">
+            <span class="number">{{ valise.tenues.count }}</span>
+            <span class="label">Tenue(s)</span>
+        </div>
+        <div class="stat">
+            <span class="number">{{ valise.duree_sejour }}</span>
+            <span class="label">Jour(s)</span>
+        </div>
+    </div>
+</div>
+
+<style>
+.valise-content-form {
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.weather-info {
+    background: #e7f3ff;
+    padding: 10px;
+    border-radius: 5px;
+    margin-top: 10px;
+    color: #0066cc;
+}
+
+.section-tabs {
+    display: flex;
+    border-bottom: 2px solid #eee;
+    margin-bottom: 30px;
+}
+
+.tab-btn {
+    background: none;
+    border: none;
+    padding: 15px 25px;
+    font-size: 16px;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.tab-btn.active {
+    color: #007bff;
+    border-bottom-color: #007bff;
+    font-weight: bold;
+}
+
+.tab-btn:hover {
+    background: #f8f9fa;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+.category-section {
+    margin-bottom: 40px;
+    padding: 20px;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    background: #fafafa;
+}
+
+.category-section h4 {
+    margin-bottom: 15px;
+    color: #333;
+    font-size: 18px;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 10px;
+}
+
+.items-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 15px;
+}
+
+.vetement-checkbox,
+.tenue-checkbox {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background: white;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.vetement-checkbox:hover,
+.tenue-checkbox:hover {
+    background: #f0f8ff;
+    border-color: #007bff;
+}
+
+.vetement-checkbox input,
+.tenue-checkbox input {
+    margin-right: 10px;
+    transform: scale(1.2);
+}
+
+.vetement-checkbox input:checked + label,
+.tenue-checkbox input:checked + label {
+    font-weight: bold;
+    color: #007bff;
+}
+
+.form-actions {
+    text-align: center;
+    padding: 30px 0;
+    border-top: 1px solid #eee;
+    margin-top: 40px;
+}
+
+.form-actions .btn {
+    margin: 0 10px;
+    padding: 12px 30px;
+}
+
+.valise-summary {
+    position: fixed;
+    top: 100px;
+    right: 20px;
+    width: 200px;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.summary-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.stat {
+    text-align: center;
+    padding: 10px;
+    border: 1px solid #eee;
+    border-radius: 5px;
+}
+
+.stat .number {
+    display: block;
+    font-size: 24px;
+    font-weight: bold;
+    color: #007bff;
+}
+
+.stat .label {
+    font-size: 12px;
+    color: #666;
+    text-transform: uppercase;
+}
+
+.error {
+    color: #dc3545;
+    margin-top: 10px;
+    padding: 10px;
+    background: #f8d7da;
+    border-radius: 4px;
+}
+
+.help-text {
+    color: #666;
+    margin-bottom: 20px;
+    font-style: italic;
+}
+
+@media (max-width: 1200px) {
+    .valise-summary {
+        position: relative;
+        width: 100%;
+        margin: 20px auto;
+        top: auto;
+        right: auto;
+    }
+    
+    .summary-stats {
+        flex-direction: row;
+        justify-content: space-around;
+    }
+}
+
+@media (max-width: 768px) {
+    .items-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .section-tabs {
+        flex-direction: column;
+    }
+    
+    .tab-btn {
+        text-align: left;
+        border-bottom: 1px solid #eee;
+        border-right: none;
+    }
+    
+    .tab-btn.active {
+        border-bottom-color: #eee;
+        border-left: 3px solid #007bff;
+    }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Gestion des onglets
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    const tabContents = document.querySelectorAll('.tab-content');
+    
+    tabBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const targetTab = this.dataset.tab;
+            
+            // Retirer active de tous les onglets
+            tabBtns.forEach(b => b.classList.remove('active'));
+            tabContents.forEach(c => c.classList.remove('active'));
+            
+            // Ajouter active à l'onglet sélectionné
+            this.classList.add('active');
+            document.getElementById(targetTab + '-tab').classList.add('active');
+        });
+    });
+    
+    // Améliorer l'apparence des checkboxes
+    const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+    checkboxes.forEach(checkbox => {
+        const container = checkbox.closest('.vetement-checkbox, .tenue-checkbox');
+        if (container) {
+            checkbox.addEventListener('change', function() {
+                if (this.checked) {
+                    container.style.background = '#e7f3ff';
+                    container.style.borderColor = '#007bff';
+                } else {
+                    container.style.background = 'white';
+                    container.style.borderColor = '#ddd';
+                }
+            });
+            
+            // État initial
+            if (checkbox.checked) {
+                container.style.background = '#e7f3ff';
+                container.style.borderColor = '#007bff';
+            }
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -48,6 +48,76 @@
         font-size: 1.1rem;
     }
 
+    .filter-section {
+        background: white;
+        padding: 20px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .filter-section h3 {
+        margin: 0 0 15px 0;
+        color: var(--gris-chaud);
+        font-size: 1.2rem;
+        font-weight: 500;
+    }
+
+    .filter-form {
+        display: flex;
+        gap: 20px;
+        align-items: end;
+        flex-wrap: wrap;
+    }
+
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        min-width: 200px;
+    }
+
+    .filter-group label {
+        font-weight: 500;
+        color: var(--gris-chaud);
+        font-size: 0.9rem;
+    }
+
+    .filter-group select {
+        padding: 10px 12px;
+        border: 2px solid var(--gris-clair);
+        border-radius: 8px;
+        background: white;
+        font-size: 1rem;
+        color: var(--gris-chaud);
+        transition: border-color 0.3s ease;
+    }
+
+    .filter-group select:focus {
+        outline: none;
+        border-color: var(--mauve-rose);
+    }
+
+    .reset-btn {
+        background: var(--gris-clair);
+        color: var(--gris-chaud);
+        border: none;
+        padding: 10px 15px;
+        border-radius: 8px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 0.9rem;
+        transition: all 0.3s ease;
+        height: fit-content;
+    }
+
+    .reset-btn:hover {
+        background: var(--rouge-corail);
+        color: white;
+    }
+
     .save-section {
         background: white;
         padding: 20px;
@@ -123,10 +193,51 @@
     .band-header {
         display: flex;
         align-items: center;
-        gap: 12px;
+        justify-content: space-between;
         margin-bottom: 15px;
         padding-bottom: 10px;
         border-bottom: 2px solid var(--gris-clair);
+    }
+
+    .band-title {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .mini-filters {
+        display: flex;
+        align-items: center;
+    }
+
+    .mini-filter {
+        background: var(--gris-clair);
+        border: 1px solid var(--gris-chaud);
+        color: var(--gris-chaud);
+        padding: 6px 10px;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        min-width: 120px;
+    }
+
+    .mini-filter:focus {
+        outline: none;
+        border-color: var(--mauve-rose);
+        background: white;
+    }
+
+    .band-header.haut .mini-filter:focus {
+        border-color: var(--mauve-rose);
+    }
+
+    .band-header.bas .mini-filter:focus {
+        border-color: var(--violet-mauve);
+    }
+
+    .band-header.chaussures .mini-filter:focus {
+        border-color: var(--orange-mandarine);
     }
 
     .band-header h3 {
@@ -372,6 +483,21 @@
             font-size: 1.5rem;
         }
 
+        .filter-form {
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .filter-group {
+            min-width: auto;
+            width: 100%;
+        }
+
+        .reset-btn {
+            width: 100%;
+            justify-content: center;
+        }
+
         .save-section {
             flex-direction: column;
             align-items: stretch;
@@ -389,6 +515,21 @@
         .item-image {
             height: 160px;
         }
+
+        .band-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .band-title {
+            width: 100%;
+        }
+
+        .mini-filter {
+            min-width: 100%;
+            font-size: 0.9rem;
+        }
     }
 </style>
 
@@ -401,6 +542,37 @@
     <div class="fring-header">
         <h1><i class="material-icons" style="vertical-align: middle; margin-right: 10px; font-size: 2rem;">auto_awesome</i>Fring - Créateur de tenues</h1>
         <p>Sélectionnez un haut, un bas et des chaussures pour créer votre tenue</p>
+    </div>
+
+    <!-- Section Filtres -->
+    <div class="filter-section">
+        <h3><i class="material-icons" style="vertical-align: middle; margin-right: 8px;">filter_list</i>Filtres</h3>
+        <form method="get" class="filter-form">
+            <div class="filter-group">
+                <label for="source">Source des vêtements :</label>
+                <select name="source" id="source" onchange="this.form.submit()">
+                    <option value="tous" {% if source_filter == 'tous' %}selected{% endif %}>Tous mes vêtements</option>
+                    <option value="mes_vetements" {% if source_filter == 'mes_vetements' %}selected{% endif %}>Mes vêtements uniquement</option>
+                    <option value="amis" {% if source_filter == 'amis' %}selected{% endif %}>Vêtements de mes amis</option>
+                    <option value="vente" {% if source_filter == 'vente' %}selected{% endif %}>Vêtements en vente</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label for="type">Type de vêtement :</label>
+                <select name="type" id="type" onchange="this.form.submit()">
+                    <option value="tous" {% if type_filter == 'tous' %}selected{% endif %}>Tous les types</option>
+                    <option value="hauts" {% if type_filter == 'hauts' %}selected{% endif %}>Hauts uniquement</option>
+                    <option value="bas" {% if type_filter == 'bas' %}selected{% endif %}>Bas uniquement</option>
+                    <option value="chaussures" {% if type_filter == 'chaussures' %}selected{% endif %}>Chaussures uniquement</option>
+                </select>
+            </div>
+            
+            <button type="button" onclick="resetFilters()" class="reset-btn">
+                <i class="material-icons">clear</i>
+                Réinitialiser
+            </button>
+        </form>
     </div>
 
     <form method="post" id="fringForm">
@@ -421,8 +593,18 @@
         <!-- Bande Hauts -->
         <div class="fring-band">
             <div class="band-header haut">
-                <span class="band-label">Haut</span>
-                <h3><i class="material-icons">checkroom</i>Hauts</h3>
+                <div class="band-title">
+                    <span class="band-label">Haut</span>
+                    <h3><i class="material-icons">checkroom</i>Hauts</h3>
+                </div>
+                <div class="mini-filters">
+                    <select class="mini-filter" onchange="filterSection('hauts', this.value)">
+                        <option value="tous">Toutes sources</option>
+                        <option value="mes_vetements">Mes vêtements</option>
+                        <option value="amis">Amis</option>
+                        <option value="vente">En vente</option>
+                    </select>
+                </div>
             </div>
             {% if hauts %}
             <div class="carousel-container">
@@ -457,8 +639,18 @@
         <!-- Bande Bas -->
         <div class="fring-band">
             <div class="band-header bas">
-                <span class="band-label bas">Bas</span>
-                <h3><i class="material-icons">accessibility</i>Bas</h3>
+                <div class="band-title">
+                    <span class="band-label bas">Bas</span>
+                    <h3><i class="material-icons">accessibility</i>Bas</h3>
+                </div>
+                <div class="mini-filters">
+                    <select class="mini-filter" onchange="filterSection('bas', this.value)">
+                        <option value="tous">Toutes sources</option>
+                        <option value="mes_vetements">Mes vêtements</option>
+                        <option value="amis">Amis</option>
+                        <option value="vente">En vente</option>
+                    </select>
+                </div>
             </div>
             {% if bas %}
             <div class="carousel-container">
@@ -493,8 +685,18 @@
         <!-- Bande Chaussures -->
         <div class="fring-band">
             <div class="band-header chaussures">
-                <span class="band-label chaussures">Chaussures</span>
-                <h3><i class="material-icons">shopping_bag</i>Chaussures</h3>
+                <div class="band-title">
+                    <span class="band-label chaussures">Chaussures</span>
+                    <h3><i class="material-icons">shopping_bag</i>Chaussures</h3>
+                </div>
+                <div class="mini-filters">
+                    <select class="mini-filter" onchange="filterSection('chaussures', this.value)">
+                        <option value="tous">Toutes sources</option>
+                        <option value="mes_vetements">Mes vêtements</option>
+                        <option value="amis">Amis</option>
+                        <option value="vente">En vente</option>
+                    </select>
+                </div>
             </div>
             {% if chaussures %}
             <div class="carousel-container">
@@ -529,6 +731,96 @@
 </div>
 
 <script>
+    // Fonction pour réinitialiser les filtres
+    function resetFilters() {
+        window.location.href = '{% url "vetements:fring_widget" %}';
+    }
+
+    // Fonction pour filtrer une section spécifique
+    function filterSection(section, source) {
+        let originalData;
+        let filteredData;
+        
+        // Sélectionner les données originales selon la section
+        switch(section) {
+            case 'hauts':
+                originalData = hautsData;
+                break;
+            case 'bas':
+                originalData = basData;
+                break;
+            case 'chaussures':
+                originalData = chaussuresData;
+                break;
+        }
+        
+        // Filtrer selon la source
+        if (source === 'tous') {
+            filteredData = originalData;
+        } else if (source === 'mes_vetements') {
+            filteredData = originalData.filter(item => item.proprietaireId === currentUserId);
+        } else if (source === 'amis') {
+            filteredData = originalData.filter(item => item.proprietaireId !== currentUserId && !item.enVente);
+        } else if (source === 'vente') {
+            filteredData = originalData.filter(item => item.enVente);
+        }
+        
+        // Mettre à jour la section avec les données filtrées
+        switch(section) {
+            case 'hauts':
+                currentHautData = filteredData;
+                currentHautIndex = 0;
+                if (filteredData.length > 0) {
+                    updateHautDisplay();
+                    document.querySelector('.fring-band:first-of-type').style.display = 'block';
+                } else {
+                    document.querySelector('.fring-band:first-of-type').style.display = 'none';
+                }
+                break;
+            case 'bas':
+                currentBasData = filteredData;
+                currentBasIndex = 0;
+                if (filteredData.length > 0) {
+                    updateBasDisplay();
+                    document.querySelectorAll('.fring-band')[1].style.display = 'block';
+                } else {
+                    document.querySelectorAll('.fring-band')[1].style.display = 'none';
+                }
+                break;
+            case 'chaussures':
+                currentChaussuresData = filteredData;
+                currentChaussuresIndex = 0;
+                if (filteredData.length > 0) {
+                    updateChaussuresDisplay();
+                    document.querySelectorAll('.fring-band')[2].style.display = 'block';
+                } else {
+                    document.querySelectorAll('.fring-band')[2].style.display = 'none';
+                }
+                break;
+        }
+        
+        // Réinitialiser les sélections si la section devient vide
+        if (filteredData.length === 0) {
+            clearSelection(section);
+        }
+    }
+
+    // Fonction pour vider une sélection
+    function clearSelection(section) {
+        switch(section) {
+            case 'hauts':
+                document.getElementById('selected_haut').value = '';
+                break;
+            case 'bas':
+                document.getElementById('selected_bas').value = '';
+                break;
+            case 'chaussures':
+                document.getElementById('selected_chaussures').value = '';
+                break;
+        }
+        updateSelectionStatus();
+    }
+
     // Données des vêtements
     const currentUserId = {{ user.id }};
 

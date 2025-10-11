@@ -1,0 +1,240 @@
+{% extends 'vetements/base.html' %}
+
+{% block title %}Supprimer "{{ valise.nom }}" - Ma Garde-Robe{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>🗑️ Supprimer la valise</h1>
+    <p class="subtitle">Êtes-vous sûr de vouloir supprimer cette valise ?</p>
+</div>
+
+<div class="delete-confirmation">
+    <div class="valise-details">
+        <h2>{{ valise.nom }}</h2>
+        <div class="details-grid">
+            <div class="detail-item">
+                <strong>📍 Destination:</strong>
+                <span>{{ valise.destination }}</span>
+            </div>
+            <div class="detail-item">
+                <strong>📅 Dates:</strong>
+                <span>{{ valise.date_depart|date:"d/m/Y" }} - {{ valise.date_retour|date:"d/m/Y" }}</span>
+            </div>
+            <div class="detail-item">
+                <strong>🎒 Type:</strong>
+                <span>{{ valise.get_type_voyage_display }}</span>
+            </div>
+            <div class="detail-item">
+                <strong>👕 Contenu:</strong>
+                <span>{{ valise.nombre_vetements }} vêtement(s), {{ valise.tenues.count }} tenue(s)</span>
+            </div>
+            {% if valise.statut %}
+            <div class="detail-item">
+                <strong>📋 Statut:</strong>
+                <span class="status {{ valise.statut }}">{{ valise.get_statut_display }}</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="warning-message">
+        <div class="warning-icon">⚠️</div>
+        <div class="warning-text">
+            <h3>Attention !</h3>
+            <p>Cette action est <strong>irréversible</strong>. La valise et toutes ses données seront définitivement supprimées.</p>
+            <ul>
+                <li>La liste des vêtements sélectionnés sera perdue</li>
+                <li>Les tenues associées ne seront pas supprimées</li>
+                <li>Cette action ne peut pas être annulée</li>
+            </ul>
+        </div>
+    </div>
+
+    <form method="post" class="delete-form">
+        {% csrf_token %}
+        <div class="form-actions">
+            <a href="{% url 'vetements:valise_detail' valise.pk %}" class="btn btn-secondary">
+                ❌ Non, garder la valise
+            </a>
+            <button type="submit" class="btn btn-danger" onclick="return confirm('Êtes-vous vraiment sûr de vouloir supprimer cette valise ?')">
+                🗑️ Oui, supprimer définitivement
+            </button>
+        </div>
+    </form>
+</div>
+
+<style>
+.delete-confirmation {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.valise-details {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 30px;
+}
+
+.valise-details h2 {
+    color: #333;
+    margin-bottom: 20px;
+    text-align: center;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 10px;
+}
+
+.details-grid {
+    display: grid;
+    gap: 15px;
+}
+
+.detail-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    background: white;
+    border-radius: 5px;
+    border: 1px solid #e9ecef;
+}
+
+.detail-item strong {
+    color: #495057;
+    min-width: 120px;
+}
+
+.detail-item span {
+    text-align: right;
+    flex: 1;
+}
+
+.status {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.status.preparation {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.status.prete {
+    background: #d1edff;
+    color: #0c5460;
+}
+
+.status.en_cours {
+    background: #d4edda;
+    color: #155724;
+}
+
+.status.terminee {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.warning-message {
+    display: flex;
+    gap: 20px;
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 30px;
+}
+
+.warning-icon {
+    font-size: 40px;
+    color: #856404;
+    flex-shrink: 0;
+}
+
+.warning-text h3 {
+    color: #856404;
+    margin-bottom: 10px;
+}
+
+.warning-text p {
+    color: #856404;
+    margin-bottom: 15px;
+}
+
+.warning-text ul {
+    color: #856404;
+    margin: 0;
+    padding-left: 20px;
+}
+
+.warning-text li {
+    margin-bottom: 5px;
+}
+
+.delete-form {
+    text-align: center;
+}
+
+.form-actions {
+    display: flex;
+    gap: 20px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.form-actions .btn {
+    padding: 12px 30px;
+    font-size: 16px;
+    min-width: 200px;
+}
+
+.btn-danger {
+    background-color: #dc3545;
+    border-color: #dc3545;
+    color: white;
+}
+
+.btn-danger:hover {
+    background-color: #c82333;
+    border-color: #bd2130;
+}
+
+@media (max-width: 768px) {
+    .warning-message {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .warning-icon {
+        align-self: center;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .form-actions .btn {
+        width: 100%;
+        max-width: 300px;
+    }
+    
+    .detail-item {
+        flex-direction: column;
+        text-align: center;
+        gap: 5px;
+    }
+    
+    .detail-item strong {
+        min-width: unset;
+    }
+    
+    .detail-item span {
+        text-align: center;
+    }
+}
+</style>
+{% endblock %}

@@ -28,7 +28,8 @@
         </div>
         <div class="valise-actions">
             <a href="{% url 'vetements:valise_detail' valise.pk %}" class="btn">Voir détails</a>
-            <a href="/admin/vetements/valise/{{ valise.pk }}/change/" class="btn btn-primary">Modifier</a>
+            <a href="{% url 'vetements:valise_edit' valise.pk %}" class="btn btn-primary">Modifier</a>
+            <a href="{% url 'vetements:valise_edit_content' valise.pk %}" class="btn btn-secondary">Contenu</a>
         </div>
     </div>
     {% endfor %}
@@ -62,6 +63,8 @@
             </div>
             <div class="valise-actions">
                 <a href="{% url 'vetements:valise_detail' valise.pk %}" class="btn">Voir détails</a>
+                <a href="{% url 'vetements:valise_edit' valise.pk %}" class="btn btn-primary">Modifier</a>
+                <a href="{% url 'vetements:valise_edit_content' valise.pk %}" class="btn btn-secondary">Contenu</a>
             </div>
         </div>
         {% endfor %}
@@ -109,7 +112,279 @@
 {% endif %}
 
 <div class="actions">
-    <a href="{% url 'vetements:accueil' %}" class="btn btn-secondary">Retour au tableau de bord</a>
-    <a href="/admin/vetements/valise/add/" class="btn btn-success">Créer une nouvelle valise</a>
+    <a href="{% url 'vetements:accueil' %}" class="btn btn-secondary">⬅️ Retour au tableau de bord</a>
+    <a href="{% url 'vetements:valise_create' %}" class="btn btn-success">➕ Créer une nouvelle valise</a>
 </div>
+
+<style>
+.page-header {
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+.page-header h1 {
+    margin-bottom: 0.5rem;
+}
+
+.subtitle {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+}
+
+.section {
+    margin-bottom: 3rem;
+}
+
+.section h2 {
+    margin-bottom: 1.5rem;
+    color: var(--text-primary);
+    font-size: 1.5rem;
+}
+
+/* Valise Card Styles */
+.valise-card {
+    background-color: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.valise-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.valise-card.active {
+    border: 2px solid var(--primary-color);
+    background: linear-gradient(135deg, #fff 0%, #f0f7ff 100%);
+}
+
+.valise-card.ready {
+    border-left: 4px solid var(--success-color);
+}
+
+.valise-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.valise-header h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    color: var(--text-primary);
+}
+
+.badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    background-color: var(--bg-tertiary);
+    color: var(--text-secondary);
+}
+
+.badge.success {
+    background-color: var(--success-light);
+    color: var(--success-color);
+}
+
+.valise-info {
+    margin-bottom: 1rem;
+}
+
+.valise-info p {
+    margin: 0.5rem 0;
+    color: var(--text-secondary);
+}
+
+.valise-info p strong {
+    color: var(--text-primary);
+}
+
+.valise-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+/* Grid Layout for Future Trips */
+.valises-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.5rem;
+}
+
+/* Table Styles */
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: var(--bg-secondary);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.table thead {
+    background-color: var(--bg-tertiary);
+}
+
+.table th,
+.table td {
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.table th {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.table td {
+    color: var(--text-secondary);
+}
+
+.table tbody tr:hover {
+    background-color: var(--bg-hover);
+}
+
+.table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* Alert Styles */
+.alert {
+    padding: 1.5rem;
+    border-radius: 8px;
+    background-color: var(--info-light);
+    border: 1px solid var(--info-color);
+    text-align: center;
+}
+
+.alert p {
+    margin: 0.5rem 0;
+}
+
+.alert.success {
+    background-color: var(--success-light);
+    border-color: var(--success-color);
+    color: var(--success-color);
+    padding: 0.5rem;
+    text-align: left;
+}
+
+/* Actions Bar */
+.actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    padding-top: 2rem;
+    border-top: 2px solid var(--border-color);
+}
+
+/* Button Styles */
+.btn {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-block;
+    transition: all 0.2s;
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #0056b3;
+}
+
+.btn-secondary {
+    background-color: var(--secondary-color);
+    color: white;
+}
+
+.btn-secondary:hover {
+    background-color: #5a6268;
+}
+
+.btn-success {
+    background-color: var(--success-color);
+    color: white;
+}
+
+.btn-success:hover {
+    background-color: #218838;
+}
+
+.btn-small {
+    padding: 0.35rem 0.75rem;
+    font-size: 0.85rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .valises-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .valise-actions {
+        flex-direction: column;
+    }
+
+    .valise-actions .btn {
+        width: 100%;
+        text-align: center;
+    }
+
+    .table {
+        display: block;
+        overflow-x: auto;
+        white-space: nowrap;
+    }
+
+    .actions {
+        flex-direction: column;
+    }
+
+    .actions .btn {
+        width: 100%;
+        text-align: center;
+    }
+}
+
+/* Color Variables */
+:root {
+    --primary-color: #007bff;
+    --secondary-color: #6c757d;
+    --success-color: #28a745;
+    --success-light: #d4edda;
+    --info-color: #17a2b8;
+    --info-light: #d1ecf1;
+    --danger-color: #dc3545;
+    --bg-primary: #ffffff;
+    --bg-secondary: #f8f9fa;
+    --bg-tertiary: #e9ecef;
+    --bg-hover: #f1f3f5;
+    --text-primary: #212529;
+    --text-secondary: #6c757d;
+    --border-color: #dee2e6;
+}
+</style>
 {% endblock %}

@@ -377,3 +377,246 @@ class AnnonceVente(models.Model):
     def est_disponible(self):
         """Vérifie si l'annonce est disponible à l'achat"""
         return self.statut == 'en_vente'
+
+
+class FavoriAnnonce(models.Model):
+    """Système de favoris pour les annonces"""
+    utilisateur = models.ForeignKey(User, on_delete=models.CASCADE, related_name='annonces_favorites', verbose_name="Utilisateur")
+    annonce = models.ForeignKey(AnnonceVente, on_delete=models.CASCADE, related_name='favoris', verbose_name="Annonce")
+    date_ajout = models.DateTimeField(auto_now_add=True, verbose_name="Date d'ajout aux favoris")
+    notification_changement_prix = models.BooleanField(default=True, verbose_name="Notifier en cas de changement de prix")
+
+    class Meta:
+        verbose_name = "Favori"
+        verbose_name_plural = "Favoris"
+        unique_together = ['utilisateur', 'annonce']
+        ordering = ['-date_ajout']
+
+    def __str__(self):
+        return f"{self.utilisateur.username} → {self.annonce.vetement.nom}"
+
+
+class TransactionVente(models.Model):
+    """Historique des transactions de vente"""
+    STATUT_CHOICES = [
+        ('en_cours', 'En cours de négociation'),
+        ('acceptee', 'Acceptée - En attente de finalisation'),
+        ('finalisee', 'Finalisée'),
+        ('annulee', 'Annulée'),
+    ]
+
+    annonce = models.ForeignKey(AnnonceVente, on_delete=models.CASCADE, related_name='transactions', verbose_name="Annonce")
+    vendeur = models.ForeignKey(User, on_delete=models.CASCADE, related_name='ventes', verbose_name="Vendeur")
+    acheteur = models.ForeignKey(User, on_delete=models.CASCADE, related_name='achats_transactions', verbose_name="Acheteur")
+
+    # Détails de la transaction
+    prix_final = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)], verbose_name="Prix final (€)")
+    prix_initial = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)], verbose_name="Prix initial (€)")
+    statut = models.CharField(max_length=20, choices=STATUT_CHOICES, default='en_cours', verbose_name="Statut")
+
+    # Livraison
+    avec_livraison = models.BooleanField(default=False, verbose_name="Avec livraison")
+    adresse_livraison = models.TextField(blank=True, verbose_name="Adresse de livraison")
+
+    # Notes et commentaires
+    notes_vendeur = models.TextField(blank=True, verbose_name="Notes du vendeur")
+    notes_acheteur = models.TextField(blank=True, verbose_name="Notes de l'acheteur")
+
+    # Dates
+    date_creation = models.DateTimeField(auto_now_add=True, verbose_name="Date de création")
+    date_acceptation = models.DateTimeField(null=True, blank=True, verbose_name="Date d'acceptation")
+    date_finalisation = models.DateTimeField(null=True, blank=True, verbose_name="Date de finalisation")
+    date_annulation = models.DateTimeField(null=True, blank=True, verbose_name="Date d'annulation")
+
+    class Meta:
+        verbose_name = "Transaction"
+        verbose_name_plural = "Transactions"
+        ordering = ['-date_creation']
+
+    def __str__(self):
+        return f"Transaction: {self.annonce.vetement.nom} - {self.vendeur.username} → {self.acheteur.username} ({self.get_statut_display()})"
+
+    @property
+    def reduction_pourcent(self):
+        """Calcule le pourcentage de réduction négocié"""
+        if self.prix_initial and self.prix_final:
+            return ((self.prix_initial - self.prix_final) / self.prix_initial) * 100
+        return 0
+
+
+class EvaluationVendeur(models.Model):
+    """Système d'évaluation des vendeurs"""
+    NOTES = [
+        (1, '⭐ - Très insatisfait'),
+        (2, '⭐⭐ - Insatisfait'),
+        (3, '⭐⭐⭐ - Correct'),
+        (4, '⭐⭐⭐⭐ - Satisfait'),
+        (5, '⭐⭐⭐⭐⭐ - Très satisfait'),
+    ]
+
+    transaction = models.OneToOneField(TransactionVente, on_delete=models.CASCADE, related_name='evaluation', verbose_name="Transaction")
+    evaluateur = models.ForeignKey(User, on_delete=models.CASCADE, related_name='evaluations_donnees', verbose_name="Évaluateur")
+    vendeur = models.ForeignKey(User, on_delete=models.CASCADE, related_name='evaluations_recues', verbose_name="Vendeur évalué")
+
+    # Notes (de 1 à 5)
+    note_globale = models.IntegerField(choices=NOTES, verbose_name="Note globale")
+    note_communication = models.IntegerField(choices=NOTES, verbose_name="Communication")
+    note_description = models.IntegerField(choices=NOTES, verbose_name="Conformité à la description")
+    note_rapidite = models.IntegerField(choices=NOTES, verbose_name="Rapidité")
+
+    # Commentaire
+    commentaire = models.TextField(blank=True, verbose_name="Commentaire")
+    recommande = models.BooleanField(default=True, verbose_name="Je recommande ce vendeur")
+
+    # Métadonnées
+    date_evaluation = models.DateTimeField(auto_now_add=True, verbose_name="Date de l'évaluation")
+
+    class Meta:
+        verbose_name = "Évaluation"
+        verbose_name_plural = "Évaluations"
+        ordering = ['-date_evaluation']
+
+    def __str__(self):
+        return f"Évaluation de {self.vendeur.username} par {self.evaluateur.username} - {self.note_globale}/5"
+
+    @property
+    def note_moyenne(self):
+        """Calcule la moyenne des notes"""
+        return (self.note_globale + self.note_communication + self.note_description + self.note_rapidite) / 4
+
+
+class ParametresSite(models.Model):
+    """Paramètres globaux du site"""
+    
+    # Informations générales
+    nom_site = models.CharField(max_length=200, default="Ma Garde-Robe", verbose_name="Nom du site")
+    description_site = models.TextField(blank=True, verbose_name="Description du site")
+    email_admin = models.EmailField(blank=True, verbose_name="Email administrateur")
+    
+    # Paramètres fonctionnels
+    inscription_ouverte = models.BooleanField(default=True, verbose_name="Inscription ouverte")
+    validation_inscription = models.BooleanField(default=False, verbose_name="Validation manuelle des inscriptions")
+    messages_actifs = models.BooleanField(default=True, verbose_name="Système de messages activé")
+    annonces_actives = models.BooleanField(default=True, verbose_name="Système d'annonces activé")
+    amitie_active = models.BooleanField(default=True, verbose_name="Système d'amitié activé")
+    
+    # Limitations
+    max_vetements_par_user = models.IntegerField(default=1000, validators=[MinValueValidator(1)], verbose_name="Max vêtements par utilisateur")
+    max_tenues_par_user = models.IntegerField(default=200, validators=[MinValueValidator(1)], verbose_name="Max tenues par utilisateur")
+    max_valises_par_user = models.IntegerField(default=50, validators=[MinValueValidator(1)], verbose_name="Max valises par utilisateur")
+    taille_max_image = models.IntegerField(default=5, validators=[MinValueValidator(1)], verbose_name="Taille max image (MB)")
+    
+    # Modération
+    moderation_active = models.BooleanField(default=False, verbose_name="Modération activée")
+    moderation_messages = models.BooleanField(default=False, verbose_name="Modérer les messages")
+    moderation_annonces = models.BooleanField(default=False, verbose_name="Modérer les annonces")
+    
+    # Maintenance
+    mode_maintenance = models.BooleanField(default=False, verbose_name="Mode maintenance")
+    message_maintenance = models.TextField(blank=True, verbose_name="Message de maintenance")
+    
+    # Métadonnées
+    date_creation = models.DateTimeField(auto_now_add=True)
+    date_modification = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = "Paramètres du site"
+        verbose_name_plural = "Paramètres du site"
+    
+    def __str__(self):
+        return f"Paramètres - {self.nom_site}"
+    
+    def save(self, *args, **kwargs):
+        # S'assurer qu'il n'y a qu'une seule instance
+        if ParametresSite.objects.exists() and not self.pk:
+            # Mettre à jour l'instance existante
+            existing = ParametresSite.objects.first()
+            self.pk = existing.pk
+        super().save(*args, **kwargs)
+    
+    @classmethod
+    def get_solo(cls):
+        """Obtenir l'instance unique des paramètres"""
+        obj, created = cls.objects.get_or_create(pk=1)
+        return obj
+
+
+class RapportModeration(models.Model):
+    """Rapports de modération pour contenus signalés"""
+    
+    TYPES_CONTENU = [
+        ('message', 'Message'),
+        ('annonce', 'Annonce de vente'),
+        ('vetement', 'Vêtement'),
+        ('tenue', 'Tenue'),
+        ('utilisateur', 'Utilisateur'),
+    ]
+    
+    STATUTS = [
+        ('en_attente', 'En attente'),
+        ('en_cours', 'En cours de traitement'),
+        ('resolu', 'Résolu'),
+        ('rejete', 'Rejeté'),
+    ]
+    
+    ACTIONS = [
+        ('aucune', 'Aucune action'),
+        ('avertissement', 'Avertissement'),
+        ('suppression', 'Suppression du contenu'),
+        ('suspension', 'Suspension temporaire'),
+        ('bannissement', 'Bannissement permanent'),
+    ]
+    
+    # Informations du signalement
+    rapporteur = models.ForeignKey(User, on_delete=models.CASCADE, related_name='rapports_envoyes', verbose_name="Rapporteur")
+    type_contenu = models.CharField(max_length=20, choices=TYPES_CONTENU, verbose_name="Type de contenu")
+    objet_id = models.IntegerField(verbose_name="ID de l'objet signalé")
+    utilisateur_concerne = models.ForeignKey(User, on_delete=models.CASCADE, related_name='rapports_recus', verbose_name="Utilisateur concerné")
+    
+    # Détails du rapport
+    motif = models.TextField(verbose_name="Motif du signalement")
+    description = models.TextField(blank=True, verbose_name="Description détaillée")
+    date_rapport = models.DateTimeField(auto_now_add=True, verbose_name="Date du rapport")
+    
+    # Traitement
+    statut = models.CharField(max_length=20, choices=STATUTS, default='en_attente', verbose_name="Statut")
+    moderateur = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='moderations_traitees', verbose_name="Modérateur")
+    action_prise = models.CharField(max_length=20, choices=ACTIONS, default='aucune', verbose_name="Action prise")
+    commentaire_moderateur = models.TextField(blank=True, verbose_name="Commentaire du modérateur")
+    date_traitement = models.DateTimeField(null=True, blank=True, verbose_name="Date de traitement")
+    
+    class Meta:
+        verbose_name = "Rapport de modération"
+        verbose_name_plural = "Rapports de modération"
+        ordering = ['-date_rapport']
+    
+    def __str__(self):
+        return f"Rapport {self.type_contenu} - {self.utilisateur_concerne.username} ({self.get_statut_display()})"
+
+
+class ActionModeration(models.Model):
+    """Historique des actions de modération"""
+    
+    TYPES_ACTION = [
+        ('avertissement', 'Avertissement'),
+        ('suppression_contenu', 'Suppression de contenu'),
+        ('suspension', 'Suspension temporaire'),
+        ('bannissement', 'Bannissement permanent'),
+        ('levee_sanction', 'Levée de sanction'),
+    ]
+    
+    utilisateur = models.ForeignKey(User, on_delete=models.CASCADE, related_name='actions_moderation', verbose_name="Utilisateur")
+    moderateur = models.ForeignKey(User, on_delete=models.CASCADE, related_name='actions_effectuees', verbose_name="Modérateur")
+    type_action = models.CharField(max_length=30, choices=TYPES_ACTION, verbose_name="Type d'action")
+    motif = models.TextField(verbose_name="Motif")
+    date_action = models.DateTimeField(auto_now_add=True, verbose_name="Date de l'action")
+    date_fin = models.DateTimeField(null=True, blank=True, verbose_name="Date de fin (pour suspensions)")
+    rapport_lie = models.ForeignKey(RapportModeration, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Rapport lié")
+    
+    class Meta:
+        verbose_name = "Action de modération"
+        verbose_name_plural = "Actions de modération"
+        ordering = ['-date_action']
+    
+    def __str__(self):
+        return f"{self.get_type_action_display()} - {self.utilisateur.username} ({self.date_action.strftime('%d/%m/%Y')})"

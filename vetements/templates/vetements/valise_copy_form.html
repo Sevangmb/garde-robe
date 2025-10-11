@@ -1,0 +1,242 @@
+{% extends 'vetements/base.html' %}
+
+{% block title %}{{ title }} - Ma Garde-Robe{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>🧳 {{ title }}</h1>
+</div>
+
+<div class="alert info">
+    <p><strong>💡 Copie de valise</strong></p>
+    <p>Vous êtes sur le point de créer une nouvelle valise basée sur "<strong>{{ valise_source.nom }}</strong>".</p>
+    <p>Les vêtements et tenues de la valise d'origine seront automatiquement copiés dans la nouvelle valise.</p>
+</div>
+
+<div class="section">
+    <h2>Informations de la valise d'origine</h2>
+    <div class="info-grid">
+        <div class="info-item">
+            <strong>📍 Destination:</strong>
+            <span>{{ valise_source.destination }}</span>
+        </div>
+        <div class="info-item">
+            <strong>🎒 Type:</strong>
+            <span>{{ valise_source.get_type_voyage_display }}</span>
+        </div>
+        <div class="info-item">
+            <strong>👕 Contenu:</strong>
+            <span>{{ valise_source.nombre_vetements }} vêtements, {{ valise_source.tenues.count }} tenues</span>
+        </div>
+        <div class="info-item">
+            <strong>⏱️ Durée:</strong>
+            <span>{{ valise_source.duree_sejour }} jours</span>
+        </div>
+    </div>
+</div>
+
+<div class="section">
+    <h2>Créer la nouvelle valise</h2>
+    <form method="post" class="form-valise">
+        {% csrf_token %}
+
+        <div class="form-group">
+            <label for="{{ form.nom.id_for_label }}">Nom du voyage *</label>
+            {{ form.nom }}
+            {% if form.nom.errors %}
+                <div class="error">{{ form.nom.errors }}</div>
+            {% endif %}
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="{{ form.destination.id_for_label }}">Destination *</label>
+                {{ form.destination }}
+                {% if form.destination.errors %}
+                    <div class="error">{{ form.destination.errors }}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.type_voyage.id_for_label }}">Type de voyage *</label>
+                {{ form.type_voyage }}
+                {% if form.type_voyage.errors %}
+                    <div class="error">{{ form.type_voyage.errors }}</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="{{ form.date_depart.id_for_label }}">Date de départ *</label>
+                {{ form.date_depart }}
+                {% if form.date_depart.errors %}
+                    <div class="error">{{ form.date_depart.errors }}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.date_retour.id_for_label }}">Date de retour *</label>
+                {{ form.date_retour }}
+                {% if form.date_retour.errors %}
+                    <div class="error">{{ form.date_retour.errors }}</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="{{ form.meteo_prevue.id_for_label }}">Météo prévue</label>
+                {{ form.meteo_prevue }}
+                {% if form.meteo_prevue.errors %}
+                    <div class="error">{{ form.meteo_prevue.errors }}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="{{ form.climat.id_for_label }}">Climat</label>
+                {{ form.climat }}
+                {% if form.climat.errors %}
+                    <div class="error">{{ form.climat.errors }}</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="{{ form.liste_articles_supplementaires.id_for_label }}">Autres articles à emporter</label>
+            {{ form.liste_articles_supplementaires }}
+            <small>Articles non-vêtements: trousse de toilette, médicaments, chargeurs, etc.</small>
+            {% if form.liste_articles_supplementaires.errors %}
+                <div class="error">{{ form.liste_articles_supplementaires.errors }}</div>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            <label for="{{ form.notes.id_for_label }}">Notes</label>
+            {{ form.notes }}
+            <small>Activités prévues, contraintes, rappels...</small>
+            {% if form.notes.errors %}
+                <div class="error">{{ form.notes.errors }}</div>
+            {% endif %}
+        </div>
+
+        {% if form.non_field_errors %}
+            <div class="alert error">
+                {{ form.non_field_errors }}
+            </div>
+        {% endif %}
+
+        <div class="form-actions">
+            <a href="{% url 'vetements:valise_detail' valise_source.pk %}" class="btn btn-secondary">Annuler</a>
+            <button type="submit" class="btn btn-primary">{{ submit_text }}</button>
+        </div>
+    </form>
+</div>
+
+<style>
+.form-valise {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 1rem;
+    font-family: inherit;
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 100px;
+}
+
+.form-group small {
+    display: block;
+    margin-top: 0.25rem;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 0;
+}
+
+@media (max-width: 768px) {
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+.form-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.error {
+    color: var(--danger-color);
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}
+
+.alert.error {
+    background-color: var(--danger-light);
+    border-color: var(--danger-color);
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}
+
+.alert.info {
+    background-color: var(--info-light);
+    border: 1px solid var(--info-color);
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.info-item strong {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
+.info-item span {
+    color: var(--text-primary);
+    font-size: 1rem;
+}
+</style>
+{% endblock %}

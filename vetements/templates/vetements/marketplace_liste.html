@@ -230,6 +230,37 @@
         color: var(--rouge-corail);
         margin-bottom: 20px;
     }
+
+    .btn-favori {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        background: white;
+        border: none;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        z-index: 10;
+        transition: all 0.3s;
+    }
+
+    .btn-favori:hover {
+        transform: scale(1.1);
+    }
+
+    .btn-favori i {
+        color: var(--rouge-corail);
+        font-size: 24px;
+    }
+
+    .btn-favori.is-favori i {
+        content: 'favorite';
+    }
 </style>
 
 <div class="marketplace-container">
@@ -238,13 +269,26 @@
             <i class="material-icons" style="font-size: 2.5rem;">store</i>
             Marketplace
         </h1>
-        <a href="{% url 'vetements:marketplace_mes_annonces' %}" class="btn btn-primary">
-            <i class="material-icons">inventory</i>
-            Mes annonces
-        </a>
+        <div style="display: flex; gap: 10px;">
+            <a href="{% url 'vetements:marketplace_mes_favoris' %}" class="btn" style="background: white; color: var(--rouge-corail);">
+                <i class="material-icons">favorite</i>
+                Favoris
+                {% if mes_favoris_count > 0 %}
+                <span class="badge" style="background: var(--rouge-corail); margin-left: 5px;">{{ mes_favoris_count }}</span>
+                {% endif %}
+            </a>
+            <a href="{% url 'vetements:marketplace_mes_transactions' %}" class="btn" style="background: white; color: var(--orange-mandarine);">
+                <i class="material-icons">history</i>
+                Historique
+            </a>
+            <a href="{% url 'vetements:marketplace_mes_annonces' %}" class="btn btn-primary">
+                <i class="material-icons">inventory</i>
+                Mes annonces
+            </a>
+        </div>
     </div>
 
-    <!-- Filtres -->
+    <!-- Filtres avancés -->
     <div class="filters-section">
         <form method="get" class="filters-form">
             <div class="filter-group">
@@ -263,12 +307,59 @@
                 </select>
             </div>
             <div class="filter-group">
-                <label>Prix maximum</label>
-                <input type="number" name="prix_max" placeholder="€" step="0.01" value="{{ request.GET.prix_max }}">
+                <label>Couleur</label>
+                <select name="couleur">
+                    <option value="">Toutes</option>
+                    {% for couleur in couleurs %}
+                    <option value="{{ couleur.id }}" {% if request.GET.couleur == couleur.id|stringformat:"s" %}selected{% endif %}>
+                        {{ couleur.nom }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Taille</label>
+                <select name="taille">
+                    <option value="">Toutes</option>
+                    {% for taille in tailles %}
+                    <option value="{{ taille.id }}" {% if request.GET.taille == taille.id|stringformat:"s" %}selected{% endif %}>
+                        {{ taille.nom }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>État</label>
+                <select name="etat">
+                    <option value="">Tous</option>
+                    {% for code, label in etats %}
+                    <option value="{{ code }}" {% if request.GET.etat == code %}selected{% endif %}>
+                        {{ label }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Prix minimum (€)</label>
+                <input type="number" name="prix_min" placeholder="Min" step="0.01" value="{{ request.GET.prix_min }}">
+            </div>
+            <div class="filter-group">
+                <label>Prix maximum (€)</label>
+                <input type="number" name="prix_max" placeholder="Max" step="0.01" value="{{ request.GET.prix_max }}">
+            </div>
+            <div class="filter-group" style="display: flex; flex-direction: column; justify-content: flex-end;">
+                <label style="display: flex; align-items: center; gap: 5px; cursor: pointer;">
+                    <input type="checkbox" name="negociable" {% if request.GET.negociable %}checked{% endif %}>
+                    <span>Négociable</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 5px; cursor: pointer; margin-top: 5px;">
+                    <input type="checkbox" name="livraison" {% if request.GET.livraison %}checked{% endif %}>
+                    <span>Livraison possible</span>
+                </label>
             </div>
             <button type="submit" class="btn btn-primary">
                 <i class="material-icons">search</i>
-                Rechercher
+                Filtrer
             </button>
             {% if request.GET %}
             <a href="{% url 'vetements:marketplace_liste' %}" class="btn btn-secondary">
@@ -290,6 +381,10 @@
                 {% else %}
                 <i class="material-icons" style="font-size: 80px; color: var(--rouge-corail);">checkroom</i>
                 {% endif %}
+                <button type="button" class="btn-favori {% if annonce.est_favori %}is-favori{% endif %}"
+                        onclick="event.preventDefault(); event.stopPropagation(); toggleFavori({{ annonce.id }}, this);">
+                    <i class="material-icons">{% if annonce.est_favori %}favorite{% else %}favorite_border{% endif %}</i>
+                </button>
                 <div class="annonce-prix">{{ annonce.prix_vente }}€</div>
             </div>
             <div class="annonce-body">
@@ -324,4 +419,42 @@
     </div>
     {% endif %}
 </div>
+
+<script>
+function toggleFavori(annonceId, button) {
+    fetch(`{% url 'vetements:marketplace_toggle_favori' 0 %}`.replace('0', annonceId), {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        const icon = button.querySelector('i');
+        if (data.action === 'added') {
+            icon.textContent = 'favorite';
+            button.classList.add('is-favori');
+        } else {
+            icon.textContent = 'favorite_border';
+            button.classList.remove('is-favori');
+        }
+
+        // Mettre à jour le compteur dans le header
+        const favorisCount = document.querySelector('.btn[href*="mes-favoris"] .badge');
+        if (favorisCount) {
+            const newCount = data.action === 'added'
+                ? parseInt(favorisCount.textContent || 0) + 1
+                : Math.max(0, parseInt(favorisCount.textContent || 0) - 1);
+            if (newCount > 0) {
+                favorisCount.textContent = newCount;
+            }
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        alert('Erreur lors de la modification du favori');
+    });
+}
+</script>
 {% endblock %}

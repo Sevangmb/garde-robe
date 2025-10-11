@@ -21,6 +21,12 @@ urlpatterns = [
     path('fring/', views.fring_widget, name='fring_widget'),
     path('valises/', views.valises_list, name='valises_list'),
     path('valises/<int:pk>/', views.valise_detail, name='valise_detail'),
+    path('valises/creer/', views.valise_create, name='valise_create'),
+    path('valises/<int:pk>/modifier/', views.valise_edit, name='valise_edit'),
+    path('valises/<int:pk>/contenu/', views.valise_edit_content, name='valise_edit_content'),
+    path('valises/<int:pk>/supprimer/', views.valise_delete, name='valise_delete'),
+    path('valises/<int:pk>/statut/', views.valise_update_status, name='valise_update_status'),
+    path('valises/<int:pk>/copier/', views.valise_copy, name='valise_copy'),
     path('statistiques/', views.statistiques, name='statistiques'),
 
     # Messaging
@@ -42,7 +48,11 @@ urlpatterns = [
     # Marketplace
     path('marketplace/', views.marketplace_liste, name='marketplace_liste'),
     path('marketplace/mes-annonces/', views.marketplace_mes_annonces, name='marketplace_mes_annonces'),
+    path('marketplace/mes-favoris/', views.marketplace_mes_favoris, name='marketplace_mes_favoris'),
+    path('marketplace/mes-transactions/', views.marketplace_mes_transactions, name='marketplace_mes_transactions'),
     path('marketplace/annonce/<int:annonce_id>/', views.marketplace_annonce_detail, name='marketplace_annonce_detail'),
+    path('marketplace/annonce/<int:annonce_id>/favori/', views.marketplace_toggle_favori, name='marketplace_toggle_favori'),
+    path('marketplace/annonce/<int:annonce_id>/contacter/', views.marketplace_contacter_vendeur, name='marketplace_contacter_vendeur'),
     path('marketplace/creer/<int:vetement_id>/', views.marketplace_creer_annonce, name='marketplace_creer_annonce'),
     path('marketplace/modifier/<int:annonce_id>/', views.marketplace_modifier_annonce, name='marketplace_modifier_annonce'),
     path('marketplace/supprimer/<int:annonce_id>/', views.marketplace_supprimer_annonce, name='marketplace_supprimer_annonce'),

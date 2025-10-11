@@ -8,7 +8,9 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth.models import User
 from django.contrib import messages
-from .models import Vetement, Categorie, Tenue, Valise, Message, Amitie, AnnonceVente
+from .models import (Vetement, Categorie, Tenue, Valise, Message, Amitie, AnnonceVente,
+                      FavoriAnnonce, TransactionVente, EvaluationVendeur, Couleur, Taille)
+from .forms import ValiseForm, ValiseVetementsForm, ValiseStatutForm
 
 # Create your views here.
 
@@ -34,7 +36,11 @@ def register(request):
 def login_view(request):
     """Connexion d'un utilisateur"""
     if request.user.is_authenticated:
-        return redirect('vetements:accueil')
+        # Rediriger selon le type d'utilisateur
+        if request.user.is_superuser:
+            return redirect('/admin/')
+        else:
+            return redirect('vetements:accueil')
 
     if request.method == 'POST':
         form = AuthenticationForm(request, data=request.POST)
@@ -45,7 +51,11 @@ def login_view(request):
             if user is not None:
                 login(request, user)
                 messages.success(request, f"Bienvenue {username}!")
-                return redirect('vetements:accueil')
+                # Rediriger les superutilisateurs vers l'admin
+                if user.is_superuser:
+                    return redirect('/admin/')
+                else:
+                    return redirect('vetements:accueil')
         else:
             messages.error(request, "Nom d'utilisateur ou mot de passe incorrect.")
     else:
@@ -505,6 +515,11 @@ def message_delete(request, pk):
 @login_required
 def fring_widget(request):
     """Widget Fring pour créer rapidement des tenues"""
+    
+    # Récupérer les filtres depuis l'URL
+    source_filter = request.GET.get('source', 'tous')  # tous, mes_vetements, amis, vente
+    type_filter = request.GET.get('type', 'tous')      # tous, hauts, bas, chaussures
+    
     if request.method == 'POST':
         # Récupérer les IDs des vêtements sélectionnés
         haut_id = request.POST.get('haut')
@@ -560,44 +575,77 @@ def fring_widget(request):
         else:
             amis_ids.add(amitie.demandeur.id)
 
-    # Récupérer tous les vêtements : propres + amis + en vente
-    # 1. Mes propres vêtements
-    mes_vetements = Vetement.objects.filter(proprietaire=request.user)
+    # Récupérer les vêtements selon le filtre de source
+    if source_filter == 'mes_vetements':
+        # Seulement mes vêtements
+        tous_vetements = Vetement.objects.filter(proprietaire=request.user)
+    elif source_filter == 'amis':
+        # Seulement les vêtements des amis
+        tous_vetements = Vetement.objects.filter(proprietaire__id__in=amis_ids)
+    elif source_filter == 'vente':
+        # Seulement les vêtements en vente
+        annonces_disponibles = AnnonceVente.objects.filter(statut='en_vente')
+        tous_vetements = Vetement.objects.filter(
+            id__in=annonces_disponibles.values_list('vetement_id', flat=True)
+        ).exclude(proprietaire=request.user)  # Exclure mes propres vêtements en vente
+    else:
+        # Tous les vêtements (default)
+        # 1. Mes propres vêtements
+        mes_vetements = Vetement.objects.filter(proprietaire=request.user)
 
-    # 2. Vêtements des amis
-    vetements_amis = Vetement.objects.filter(proprietaire__id__in=amis_ids)
+        # 2. Vêtements des amis
+        vetements_amis = Vetement.objects.filter(proprietaire__id__in=amis_ids)
 
-    # 3. Vêtements en vente
-    annonces_disponibles = AnnonceVente.objects.filter(statut='en_vente')
-    vetements_en_vente = Vetement.objects.filter(
-        id__in=annonces_disponibles.values_list('vetement_id', flat=True)
-    ).exclude(proprietaire=request.user)  # Exclure mes propres vêtements en vente
+        # 3. Vêtements en vente
+        annonces_disponibles = AnnonceVente.objects.filter(statut='en_vente')
+        vetements_en_vente = Vetement.objects.filter(
+            id__in=annonces_disponibles.values_list('vetement_id', flat=True)
+        ).exclude(proprietaire=request.user)  # Exclure mes propres vêtements en vente
 
-    # Combiner tous les vêtements
-    tous_vetements = mes_vetements | vetements_amis | vetements_en_vente
-    tous_vetements = tous_vetements.distinct()
+        # Combiner tous les vêtements
+        tous_vetements = mes_vetements | vetements_amis | vetements_en_vente
+        tous_vetements = tous_vetements.distinct()
 
-    # Filtrer par catégorie (insensible à la casse)
-    # Hauts
-    hauts = tous_vetements.filter(
-        categorie__nom__iregex=r'^(t-shirt|chemise|pull|sweat|veste|manteau|top|chemisier|polo|débardeur|gilet|cardigan|blouson)$'
-    ).order_by('-date_ajout')
+    # Filtrer par catégorie selon le filtre de type
+    if type_filter == 'hauts':
+        hauts = tous_vetements.filter(
+            categorie__nom__iregex=r'^(t-shirt|chemise|pull|sweat|veste|manteau|top|chemisier|polo|débardeur|gilet|cardigan|blouson)$'
+        ).order_by('-date_ajout')
+        bas = Vetement.objects.none()
+        chaussures = Vetement.objects.none()
+    elif type_filter == 'bas':
+        hauts = Vetement.objects.none()
+        bas = tous_vetements.filter(
+            categorie__nom__iregex=r'^(pantalon|jean|short|jupe|legging|jogging|bermuda)$'
+        ).order_by('-date_ajout')
+        chaussures = Vetement.objects.none()
+    elif type_filter == 'chaussures':
+        hauts = Vetement.objects.none()
+        bas = Vetement.objects.none()
+        chaussures = tous_vetements.filter(
+            categorie__nom__iregex=r'^(chaussure|basket|botte|sandale|escarpin|mocassin|sneaker|tong|ballerine|derby|chaussures)$'
+        ).order_by('-date_ajout')
+    else:
+        # Tous les types (default)
+        hauts = tous_vetements.filter(
+            categorie__nom__iregex=r'^(t-shirt|chemise|pull|sweat|veste|manteau|top|chemisier|polo|débardeur|gilet|cardigan|blouson)$'
+        ).order_by('-date_ajout')
 
-    # Bas
-    bas = tous_vetements.filter(
-        categorie__nom__iregex=r'^(pantalon|jean|short|jupe|legging|jogging|bermuda)$'
-    ).order_by('-date_ajout')
+        bas = tous_vetements.filter(
+            categorie__nom__iregex=r'^(pantalon|jean|short|jupe|legging|jogging|bermuda)$'
+        ).order_by('-date_ajout')
 
-    # Chaussures
-    chaussures = tous_vetements.filter(
-        categorie__nom__iregex=r'^(chaussure|basket|botte|sandale|escarpin|mocassin|sneaker|tong|ballerine|derby|chaussures)$'
-    ).order_by('-date_ajout')
+        chaussures = tous_vetements.filter(
+            categorie__nom__iregex=r'^(chaussure|basket|botte|sandale|escarpin|mocassin|sneaker|tong|ballerine|derby|chaussures)$'
+        ).order_by('-date_ajout')
 
     context = {
         'hauts': hauts,
         'bas': bas,
         'chaussures': chaussures,
         'user': request.user,
+        'source_filter': source_filter,
+        'type_filter': type_filter,
     }
     return render(request, 'vetements/fring_widget.html', context)
 
@@ -748,20 +796,48 @@ def marketplace_liste(request):
         statut='en_vente'
     ).exclude(
         vendeur=request.user
-    ).select_related('vetement', 'vendeur').order_by('-date_publication')
+    ).select_related('vetement__categorie', 'vetement__couleur', 'vetement__taille', 'vendeur').order_by('-date_publication')
 
     # Filtrage par catégorie
     categorie_id = request.GET.get('categorie')
     if categorie_id:
         annonces = annonces.filter(vetement__categorie_id=categorie_id)
 
+    # Filtrage par couleur
+    couleur_id = request.GET.get('couleur')
+    if couleur_id:
+        annonces = annonces.filter(vetement__couleur_id=couleur_id)
+
+    # Filtrage par taille
+    taille_id = request.GET.get('taille')
+    if taille_id:
+        annonces = annonces.filter(vetement__taille_id=taille_id)
+
+    # Filtrage par état
+    etat = request.GET.get('etat')
+    if etat:
+        annonces = annonces.filter(vetement__etat=etat)
+
     # Filtrage par prix
+    prix_min = request.GET.get('prix_min')
+    if prix_min:
+        try:
+            annonces = annonces.filter(prix_vente__gte=float(prix_min))
+        except ValueError:
+            pass
+
     prix_max = request.GET.get('prix_max')
     if prix_max:
         try:
             annonces = annonces.filter(prix_vente__lte=float(prix_max))
         except ValueError:
             pass
+
+    # Filtrage négociable/livraison
+    if request.GET.get('negociable'):
+        annonces = annonces.filter(negociable=True)
+    if request.GET.get('livraison'):
+        annonces = annonces.filter(livraison_possible=True)
 
     # Recherche
     recherche = request.GET.get('q')
@@ -772,9 +848,22 @@ def marketplace_liste(request):
             Q(vetement__marque__icontains=recherche)
         )
 
+    # Récupérer les favoris de l'utilisateur
+    favoris_ids = FavoriAnnonce.objects.filter(
+        utilisateur=request.user
+    ).values_list('annonce_id', flat=True)
+
+    # Ajouter une annotation pour savoir si c'est un favori
+    for annonce in annonces:
+        annonce.est_favori = annonce.id in favoris_ids
+
     context = {
         'annonces': annonces,
         'categories': Categorie.objects.all(),
+        'couleurs': Couleur.objects.all(),
+        'tailles': Taille.objects.all().order_by('ordre'),
+        'etats': Vetement.ETAT_CHOICES,
+        'mes_favoris_count': len(favoris_ids),
     }
     return render(request, 'vetements/marketplace_liste.html', context)
 
@@ -898,3 +987,225 @@ def marketplace_supprimer_annonce(request, annonce_id):
 
     messages.success(request, f"Annonce pour {vetement_nom} supprimée.")
     return redirect('vetements:marketplace_mes_annonces')
+
+
+# Gestion des favoris
+@login_required
+def marketplace_toggle_favori(request, annonce_id):
+    """Ajouter/retirer une annonce des favoris"""
+    annonce = get_object_or_404(AnnonceVente, pk=annonce_id, statut='en_vente')
+    
+    favori, created = FavoriAnnonce.objects.get_or_create(
+        utilisateur=request.user,
+        annonce=annonce
+    )
+    
+    if not created:
+        favori.delete()
+        messages.success(request, "Annonce retirée des favoris.")
+    else:
+        messages.success(request, "Annonce ajoutée aux favoris!")
+    
+    return redirect('vetements:marketplace_liste')
+
+
+@login_required
+def marketplace_mes_favoris(request):
+    """Liste des annonces favorites de l'utilisateur"""
+    favoris = FavoriAnnonce.objects.filter(
+        utilisateur=request.user
+    ).select_related('annonce__vetement__categorie', 'annonce__vendeur').order_by('-date_ajout')
+    
+    # Filtrer uniquement les annonces toujours en vente
+    favoris = [f for f in favoris if f.annonce.statut == 'en_vente']
+    
+    context = {
+        'favoris': favoris,
+    }
+    return render(request, 'vetements/marketplace_mes_favoris.html', context)
+
+
+# Gestion des transactions
+@login_required
+def marketplace_mes_transactions(request):
+    """Historique des transactions (achats et ventes)"""
+    # Mes achats
+    mes_achats = TransactionVente.objects.filter(
+        acheteur=request.user
+    ).select_related('annonce__vetement', 'vendeur').order_by('-date_creation')
+    
+    # Mes ventes
+    mes_ventes = TransactionVente.objects.filter(
+        vendeur=request.user
+    ).select_related('annonce__vetement', 'acheteur').order_by('-date_creation')
+    
+    context = {
+        'mes_achats': mes_achats,
+        'mes_ventes': mes_ventes,
+    }
+    return render(request, 'vetements/marketplace_mes_transactions.html', context)
+
+
+@login_required
+def marketplace_contacter_vendeur(request, annonce_id):
+    """Contacter le vendeur via la messagerie"""
+    annonce = get_object_or_404(AnnonceVente, pk=annonce_id)
+    
+    if annonce.vendeur == request.user:
+        messages.error(request, "Vous ne pouvez pas vous contacter vous-même.")
+        return redirect('vetements:marketplace_annonce_detail', annonce_id=annonce_id)
+    
+    # Rediriger vers la composition de message avec le vendeur prérempli
+    return redirect('vetements:message_compose_to', destinataire_id=annonce.vendeur.id)
+
+
+# ========================================
+# GESTION DES VALISES POUR UTILISATEURS
+# ========================================
+
+@login_required
+def valise_create(request):
+    """Créer une nouvelle valise"""
+    if request.method == 'POST':
+        form = ValiseForm(request.POST)
+        if form.is_valid():
+            valise = form.save(commit=False)
+            valise.proprietaire = request.user
+            valise.save()
+            messages.success(request, f"Valise '{valise.nom}' créée avec succès!")
+            return redirect('vetements:valise_edit_content', pk=valise.pk)
+    else:
+        form = ValiseForm()
+    
+    context = {
+        'form': form,
+        'title': 'Créer une nouvelle valise',
+        'submit_text': 'Créer la valise'
+    }
+    return render(request, 'vetements/valise_form.html', context)
+
+
+@login_required 
+def valise_edit(request, pk):
+    """Modifier les informations d'une valise"""
+    valise = get_object_or_404(Valise, pk=pk, proprietaire=request.user)
+    
+    if request.method == 'POST':
+        form = ValiseForm(request.POST, instance=valise)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"Valise '{valise.nom}' modifiée avec succès!")
+            return redirect('vetements:valise_detail', pk=valise.pk)
+    else:
+        form = ValiseForm(instance=valise)
+    
+    context = {
+        'form': form,
+        'valise': valise,
+        'title': f'Modifier "{valise.nom}"',
+        'submit_text': 'Sauvegarder les modifications'
+    }
+    return render(request, 'vetements/valise_form.html', context)
+
+
+@login_required
+def valise_edit_content(request, pk):
+    """Modifier le contenu (vêtements) d'une valise"""
+    valise = get_object_or_404(Valise, pk=pk, proprietaire=request.user)
+    
+    if request.method == 'POST':
+        form = ValiseVetementsForm(request.user, valise, request.POST)
+        if form.is_valid():
+            # Vider d'abord la valise
+            valise.vetements.clear()
+            valise.tenues.clear()
+            
+            # Ajouter les vêtements sélectionnés
+            for field_name, vetement_ids in form.cleaned_data.items():
+                if field_name.startswith('vetements_') and vetement_ids:
+                    for vetement_id in vetement_ids:
+                        vetement = Vetement.objects.get(id=vetement_id, proprietaire=request.user)
+                        valise.vetements.add(vetement)
+                elif field_name == 'tenues' and vetement_ids:
+                    for tenue in vetement_ids:
+                        valise.tenues.add(tenue)
+            
+            messages.success(request, f"Contenu de la valise '{valise.nom}' mis à jour!")
+            return redirect('vetements:valise_detail', pk=valise.pk)
+    else:
+        form = ValiseVetementsForm(request.user, valise)
+    
+    context = {
+        'form': form,
+        'valise': valise,
+        'title': f'Contenu de "{valise.nom}"'
+    }
+    return render(request, 'vetements/valise_content_form.html', context)
+
+
+@login_required
+def valise_delete(request, pk):
+    """Supprimer une valise"""
+    valise = get_object_or_404(Valise, pk=pk, proprietaire=request.user)
+    
+    if request.method == 'POST':
+        nom_valise = valise.nom
+        valise.delete()
+        messages.success(request, f"Valise '{nom_valise}' supprimée avec succès!")
+        return redirect('vetements:valises_list')
+    
+    context = {
+        'valise': valise
+    }
+    return render(request, 'vetements/valise_confirm_delete.html', context)
+
+
+@login_required
+def valise_update_status(request, pk):
+    """Mettre à jour le statut d'une valise"""
+    valise = get_object_or_404(Valise, pk=pk, proprietaire=request.user)
+    
+    if request.method == 'POST':
+        form = ValiseStatutForm(request.POST, instance=valise)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"Statut de la valise '{valise.nom}' mis à jour!")
+            return redirect('vetements:valise_detail', pk=valise.pk)
+    
+    return redirect('vetements:valise_detail', pk=valise.pk)
+
+
+@login_required
+def valise_copy(request, pk):
+    """Copier une valise existante pour un nouveau voyage"""
+    valise_source = get_object_or_404(Valise, pk=pk, proprietaire=request.user)
+    
+    if request.method == 'POST':
+        form = ValiseForm(request.POST)
+        if form.is_valid():
+            # Créer la nouvelle valise
+            nouvelle_valise = form.save(commit=False)
+            nouvelle_valise.proprietaire = request.user
+            nouvelle_valise.save()
+            
+            # Copier les vêtements et tenues
+            nouvelle_valise.vetements.set(valise_source.vetements.all())
+            nouvelle_valise.tenues.set(valise_source.tenues.all())
+            
+            messages.success(request, f"Valise copiée! Nouvelle valise '{nouvelle_valise.nom}' créée.")
+            return redirect('vetements:valise_detail', pk=nouvelle_valise.pk)
+    else:
+        # Préremplir le formulaire avec quelques données de base
+        form = ValiseForm(initial={
+            'type_voyage': valise_source.type_voyage,
+            'climat': valise_source.climat,
+            'liste_articles_supplementaires': valise_source.liste_articles_supplementaires
+        })
+    
+    context = {
+        'form': form,
+        'valise_source': valise_source,
+        'title': f'Copier "{valise_source.nom}"',
+        'submit_text': 'Créer la copie'
+    }
+    return render(request, 'vetements/valise_copy_form.html', context)

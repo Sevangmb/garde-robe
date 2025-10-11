@@ -140,69 +140,48 @@
 
             {% if user.is_authenticated %}
             <ul class="right hide-on-med-and-down">
+                <!-- Tableau de bord -->
                 <li class="{% if request.resolver_match.url_name == 'accueil' %}active{% endif %}">
                     <a href="{% url 'vetements:accueil' %}" class="waves-effect tooltipped" data-position="bottom" data-tooltip="Tableau de bord">
                         <i class="material-icons">dashboard</i>
                     </a>
                 </li>
-                <li class="{% if request.resolver_match.url_name == 'liste_vetements' or request.resolver_match.url_name == 'detail_vetement' %}active{% endif %}">
-                    <a href="{% url 'vetements:liste_vetements' %}" class="waves-effect tooltipped" data-position="bottom" data-tooltip="Vêtements">
+
+                <!-- Ma garde-robe (dropdown) -->
+                <li class="{% if request.resolver_match.url_name in 'liste_vetements,detail_vetement' or 'tenue' in request.resolver_match.url_name or 'valise' in request.resolver_match.url_name %}active{% endif %}">
+                    <a class="dropdown-trigger waves-effect tooltipped" href="#!" data-target="garderobe-dropdown" data-position="bottom" data-tooltip="Ma garde-robe">
                         <i class="material-icons">checkroom</i>
                     </a>
                 </li>
-                <li class="{% if 'tenue' in request.resolver_match.url_name %}active{% endif %}">
-                    <a href="{% url 'vetements:tenues_list' %}" class="waves-effect tooltipped" data-position="bottom" data-tooltip="Tenues">
-                        <i class="material-icons">style</i>
-                    </a>
-                </li>
+
+                <!-- Fring -->
                 <li class="{% if request.resolver_match.url_name == 'fring_widget' %}active{% endif %}">
                     <a href="{% url 'vetements:fring_widget' %}" class="waves-effect tooltipped" data-position="bottom" data-tooltip="Fring - Créer une tenue">
                         <i class="material-icons">auto_awesome</i>
                     </a>
                 </li>
-                <li class="{% if 'valise' in request.resolver_match.url_name %}active{% endif %}">
-                    <a href="{% url 'vetements:valises_list' %}" class="waves-effect tooltipped" data-position="bottom" data-tooltip="Valises">
-                        <i class="material-icons">luggage</i>
-                    </a>
-                </li>
+
+                <!-- Entretien -->
                 <li class="{% if request.resolver_match.url_name == 'entretien' %}active{% endif %}">
                     <a href="{% url 'vetements:entretien' %}" class="waves-effect tooltipped" data-position="bottom" data-tooltip="Entretien">
                         <i class="material-icons">local_laundry_service</i>
                     </a>
                 </li>
-                <li class="{% if request.resolver_match.url_name == 'statistiques' %}active{% endif %}">
-                    <a href="{% url 'vetements:statistiques' %}" class="waves-effect tooltipped" data-position="bottom" data-tooltip="Statistiques">
-                        <i class="material-icons">bar_chart</i>
-                    </a>
-                </li>
-                <li class="{% if 'message' in request.resolver_match.url_name %}active{% endif %}">
-                    <a href="{% url 'vetements:messages_inbox' %}" class="waves-effect tooltipped" data-position="bottom" data-tooltip="Messages">
-                        <i class="material-icons">mail</i>
+
+                <!-- Social (dropdown) -->
+                <li class="{% if 'message' in request.resolver_match.url_name or 'amis' in request.resolver_match.url_name or 'amitie' in request.resolver_match.url_name or 'marketplace' in request.resolver_match.url_name %}active{% endif %}">
+                    <a class="dropdown-trigger waves-effect tooltipped" href="#!" data-target="social-dropdown" data-position="bottom" data-tooltip="Social">
+                        <i class="material-icons">people</i>
                         {% if unread_messages_count > 0 %}
                         <span class="new badge amber" data-badge-caption="">{{ unread_messages_count }}</span>
                         {% endif %}
                     </a>
                 </li>
-                <li class="{% if 'amis' in request.resolver_match.url_name or 'amitie' in request.resolver_match.url_name %}active{% endif %}">
-                    <a href="{% url 'vetements:amis_list' %}" class="waves-effect tooltipped" data-position="bottom" data-tooltip="Mes amis">
-                        <i class="material-icons">group</i>
-                    </a>
-                </li>
-                <li class="{% if 'marketplace' in request.resolver_match.url_name %}active{% endif %}">
-                    <a href="{% url 'vetements:marketplace_liste' %}" class="waves-effect tooltipped" data-position="bottom" data-tooltip="Marketplace">
-                        <i class="material-icons">store</i>
-                    </a>
-                </li>
-                {% if user.is_superuser %}
+
+                <!-- Plus (dropdown) -->
                 <li>
-                    <a href="/admin/" class="waves-effect tooltipped" data-position="bottom" data-tooltip="Administration">
-                        <i class="material-icons">admin_panel_settings</i>
-                    </a>
-                </li>
-                {% endif %}
-                <li>
-                    <a class="dropdown-trigger waves-effect tooltipped" href="#!" data-target="user-dropdown" data-position="bottom" data-tooltip="{{ user.username }}">
-                        <i class="material-icons">account_circle</i>
+                    <a class="dropdown-trigger waves-effect tooltipped" href="#!" data-target="plus-dropdown" data-position="bottom" data-tooltip="Plus">
+                        <i class="material-icons">more_vert</i>
                     </a>
                 </li>
             </ul>
@@ -215,10 +194,37 @@
         </div>
     </nav>
 
-    <!-- User Dropdown -->
+    <!-- Dropdowns -->
     {% if user.is_authenticated %}
-    <ul id="user-dropdown" class="dropdown-content">
+    <!-- Dropdown Ma garde-robe -->
+    <ul id="garderobe-dropdown" class="dropdown-content">
+        <li><a href="{% url 'vetements:liste_vetements' %}"><i class="material-icons">checkroom</i>Vêtements</a></li>
+        <li><a href="{% url 'vetements:tenues_list' %}"><i class="material-icons">style</i>Tenues</a></li>
+        <li><a href="{% url 'vetements:valises_list' %}"><i class="material-icons">luggage</i>Valises</a></li>
+    </ul>
+
+    <!-- Dropdown Social -->
+    <ul id="social-dropdown" class="dropdown-content">
+        <li>
+            <a href="{% url 'vetements:messages_inbox' %}">
+                <i class="material-icons">mail</i>Messages
+                {% if unread_messages_count > 0 %}
+                <span class="new badge amber" data-badge-caption="">{{ unread_messages_count }}</span>
+                {% endif %}
+            </a>
+        </li>
+        <li><a href="{% url 'vetements:amis_list' %}"><i class="material-icons">group</i>Mes amis</a></li>
+        <li><a href="{% url 'vetements:marketplace_liste' %}"><i class="material-icons">store</i>Marketplace</a></li>
+    </ul>
+
+    <!-- Dropdown Plus -->
+    <ul id="plus-dropdown" class="dropdown-content">
+        <li><a href="{% url 'vetements:statistiques' %}"><i class="material-icons">bar_chart</i>Statistiques</a></li>
         <li><a href="{% url 'vetements:user_profile' %}"><i class="material-icons">person</i>Mon Profil</a></li>
+        {% if user.is_superuser %}
+        <li class="divider"></li>
+        <li><a href="/admin/"><i class="material-icons">admin_panel_settings</i>Administration</a></li>
+        {% endif %}
         <li class="divider"></li>
         <li><a href="{% url 'vetements:logout' %}"><i class="material-icons">exit_to_app</i>Déconnexion</a></li>
     </ul>
@@ -227,6 +233,7 @@
     <!-- Mobile Sidenav -->
     {% if user.is_authenticated %}
     <ul class="sidenav" id="mobile-nav">
+        <!-- User Header -->
         <li><div class="user-view">
             <div class="background" style="background: linear-gradient(135deg, #B09199 0%, #8C7A9E 100%);">
                 <img src="https://images.unsplash.com/photo-1558769132-cb1aea8f4b06?w=800&auto=format&fit=crop&q=60" style="opacity: 0.3;">
@@ -238,11 +245,16 @@
             <a href="{% url 'vetements:user_profile' %}"><span class="white-text email">{{ user.email|default:"Aucun email" }}</span></a>
         </div></li>
 
+        <!-- Tableau de bord -->
         <li class="{% if request.resolver_match.url_name == 'accueil' %}active{% endif %}">
             <a href="{% url 'vetements:accueil' %}" class="waves-effect">
                 <i class="material-icons" style="color: #B09199;">dashboard</i>Tableau de bord
             </a>
         </li>
+
+        <!-- Section Ma garde-robe -->
+        <li><div class="divider"></div></li>
+        <li class="subheader">Ma garde-robe</li>
         <li class="{% if request.resolver_match.url_name == 'liste_vetements' or request.resolver_match.url_name == 'detail_vetement' %}active{% endif %}">
             <a href="{% url 'vetements:liste_vetements' %}" class="waves-effect">
                 <i class="material-icons" style="color: #8C7A9E;">checkroom</i>Vêtements
@@ -250,17 +262,21 @@
         </li>
         <li class="{% if 'tenue' in request.resolver_match.url_name %}active{% endif %}">
             <a href="{% url 'vetements:tenues_list' %}" class="waves-effect">
-                <i class="material-icons purple-text" style="color: #E94B5A;">style</i>Tenues
-            </a>
-        </li>
-        <li class="{% if request.resolver_match.url_name == 'fring_widget' %}active{% endif %}">
-            <a href="{% url 'vetements:fring_widget' %}" class="waves-effect">
-                <i class="material-icons" style="color: #F5D987;">auto_awesome</i>Fring - Créer une tenue
+                <i class="material-icons" style="color: #E94B5A;">style</i>Tenues
             </a>
         </li>
         <li class="{% if 'valise' in request.resolver_match.url_name %}active{% endif %}">
             <a href="{% url 'vetements:valises_list' %}" class="waves-effect">
-                <i class="material-icons orange-text" style="color: #E8874F;">luggage</i>Valises
+                <i class="material-icons" style="color: #E8874F;">luggage</i>Valises
+            </a>
+        </li>
+
+        <!-- Section Outils -->
+        <li><div class="divider"></div></li>
+        <li class="subheader">Outils</li>
+        <li class="{% if request.resolver_match.url_name == 'fring_widget' %}active{% endif %}">
+            <a href="{% url 'vetements:fring_widget' %}" class="waves-effect">
+                <i class="material-icons" style="color: #F5D987;">auto_awesome</i>Fring - Créer une tenue
             </a>
         </li>
         <li class="{% if request.resolver_match.url_name == 'entretien' %}active{% endif %}">
@@ -273,6 +289,10 @@
                 <i class="material-icons" style="color: #8C7A9E;">bar_chart</i>Statistiques
             </a>
         </li>
+
+        <!-- Section Social -->
+        <li><div class="divider"></div></li>
+        <li class="subheader">Social</li>
         <li class="{% if 'message' in request.resolver_match.url_name %}active{% endif %}">
             <a href="{% url 'vetements:messages_inbox' %}" class="waves-effect">
                 <i class="material-icons" style="color: #B09199;">mail</i>Messages
@@ -292,14 +312,13 @@
             </a>
         </li>
 
-        {% if user.is_superuser %}
+        <!-- Section Compte -->
         <li><div class="divider"></div></li>
-        <li class="subheader">Administration</li>
-        <li><a href="/admin/" class="waves-effect"><i class="material-icons red-text">admin_panel_settings</i>Panneau d'admin</a></li>
-        {% endif %}
-
-        <li><div class="divider"></div></li>
+        <li class="subheader">Mon compte</li>
         <li><a href="{% url 'vetements:user_profile' %}" class="waves-effect"><i class="material-icons grey-text">person</i>Mon Profil</a></li>
+        {% if user.is_superuser %}
+        <li><a href="/admin/" class="waves-effect"><i class="material-icons red-text">admin_panel_settings</i>Administration</a></li>
+        {% endif %}
         <li><a href="{% url 'vetements:logout' %}" class="waves-effect"><i class="material-icons grey-text">exit_to_app</i>Déconnexion</a></li>
     </ul>
     {% else %}

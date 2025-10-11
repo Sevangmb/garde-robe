@@ -1,0 +1,92 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block title %}{{ title }} | {{ site_title|default:_('Django site admin') }}{% endblock %}
+
+{% block branding %}
+<h1 id="site-name"><a href="{% url 'admin:index' %}">Administration Garde-Robe</a></h1>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <div class="module">
+        <table>
+            <caption>
+                <a href="#" class="section">Statistiques du Site</a>
+            </caption>
+            <tr>
+                <th scope="row"><a href="{% url 'admin:auth_user_changelist' %}">Utilisateurs totaux</a></th>
+                <td>{{ total_users|default:0 }}</td>
+            </tr>
+            <tr>
+                <th scope="row">Utilisateurs avec vêtements</th>
+                <td>{{ users_with_clothes|default:0 }}</td>
+            </tr>
+            <tr>
+                <th scope="row"><a href="{% url 'admin:vetements_vetement_changelist' %}">Vêtements totaux</a></th>
+                <td>{{ total_vetements|default:0 }}</td>
+            </tr>
+            <tr>
+                <th scope="row"><a href="{% url 'admin:vetements_tenue_changelist' %}">Tenues totales</a></th>
+                <td>{{ total_tenues|default:0 }}</td>
+            </tr>
+            <tr>
+                <th scope="row"><a href="{% url 'admin:vetements_message_changelist' %}">Messages non lus</a></th>
+                <td>{{ unread_messages|default:0 }}</td>
+            </tr>
+            <tr>
+                <th scope="row"><a href="{% url 'admin:vetements_annoncevente_changelist' %}">Annonces actives</a></th>
+                <td>{{ active_announcements|default:0 }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="module">
+        <table>
+            <caption>
+                <a href="#" class="section">Administration</a>
+            </caption>
+            <tr>
+                <th scope="row"><a href="{% url 'admin:auth_user_changelist' %}">Gestion des utilisateurs</a></th>
+                <td>Gérer les comptes utilisateurs</td>
+            </tr>
+            <tr>
+                <th scope="row"><a href="{% url 'admin:vetements_parametressite_changelist' %}">Paramètres du site</a></th>
+                <td>Configuration générale</td>
+            </tr>
+            <tr>
+                <th scope="row"><a href="{% url 'admin:vetements_rapportmoderation_changelist' %}">Modération</a></th>
+                <td>Rapports et sanctions</td>
+            </tr>
+            <tr>
+                <th scope="row"><a href="{% url 'admin:auth_group_changelist' %}">Groupes et permissions</a></th>
+                <td>Gestion des permissions</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="module">
+        <table>
+            <caption>
+                <a href="#" class="section">Contenu</a>
+            </caption>
+            <tr>
+                <th scope="row"><a href="{% url 'admin:vetements_vetement_changelist' %}">Vêtements</a></th>
+                <td>Gérer tous les vêtements</td>
+            </tr>
+            <tr>
+                <th scope="row"><a href="{% url 'admin:vetements_tenue_changelist' %}">Tenues</a></th>
+                <td>Gérer toutes les tenues</td>
+            </tr>
+            <tr>
+                <th scope="row"><a href="{% url 'admin:vetements_annoncevente_changelist' %}">Annonces</a></th>
+                <td>Gérer les annonces de vente</td>
+            </tr>
+            <tr>
+                <th scope="row"><a href="{% url 'admin:vetements_message_changelist' %}">Messages</a></th>
+                <td>Gérer les messages utilisateurs</td>
+            </tr>
+        </table>
+    </div>
+</div>
+{% endblock %}

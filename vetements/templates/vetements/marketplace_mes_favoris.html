@@ -1,0 +1,340 @@
+{% extends 'vetements/base.html' %}
+
+{% block title %}Mes favoris - Ma Garde-Robe{% endblock %}
+
+{% block content %}
+<style>
+    :root {
+        --mauve-rose: #B09199;
+        --rouge-corail: #E94B5A;
+        --jaune-pastel: #F5D987;
+        --orange-mandarine: #E8874F;
+        --violet-mauve: #8C7A9E;
+        --beige-clair: #FDFBF7;
+        --gris-chaud: #6B6560;
+        --gris-clair: #F5F3F0;
+    }
+
+    .favoris-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 20px;
+    }
+
+    .favoris-header {
+        background: linear-gradient(135deg, var(--rouge-corail) 0%, var(--orange-mandarine) 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        box-shadow: 0 4px 12px rgba(233, 75, 90, 0.3);
+    }
+
+    .favoris-header h1 {
+        margin: 0;
+        font-size: 2rem;
+        font-weight: 300;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .annonces-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 20px;
+    }
+
+    .annonce-card {
+        background: white;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        transition: all 0.3s;
+        cursor: pointer;
+        text-decoration: none;
+        color: inherit;
+        display: block;
+        position: relative;
+    }
+
+    .annonce-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    .annonce-image {
+        width: 100%;
+        height: 200px;
+        background: var(--gris-clair);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .annonce-image img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    .annonce-image.no-image {
+        background: linear-gradient(135deg, rgba(233, 75, 90, 0.1) 0%, rgba(232, 135, 79, 0.1) 100%);
+    }
+
+    .annonce-prix {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: var(--rouge-corail);
+        color: white;
+        padding: 8px 15px;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 1.1rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    .annonce-body {
+        padding: 15px;
+    }
+
+    .annonce-titre {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--gris-chaud);
+        margin: 0 0 8px 0;
+    }
+
+    .annonce-vendeur {
+        font-size: 0.85rem;
+        color: #999;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .annonce-badges {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+
+    .badge {
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .badge-negociable {
+        background: rgba(76, 175, 80, 0.15);
+        color: #4CAF50;
+    }
+
+    .badge-livraison {
+        background: rgba(140, 122, 158, 0.15);
+        color: var(--violet-mauve);
+    }
+
+    .badge-favori-date {
+        background: rgba(233, 75, 90, 0.15);
+        color: var(--rouge-corail);
+    }
+
+    .btn {
+        padding: 10px 20px;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        font-weight: 600;
+        text-decoration: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s;
+    }
+
+    .btn-primary {
+        background: var(--rouge-corail);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: var(--orange-mandarine);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(233, 75, 90, 0.3);
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .empty-state i {
+        font-size: 80px;
+        color: var(--rouge-corail);
+        margin-bottom: 20px;
+    }
+
+    .btn-retirer-favori {
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        background: white;
+        border: none;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        z-index: 10;
+        transition: all 0.3s;
+    }
+
+    .btn-retirer-favori:hover {
+        transform: scale(1.1);
+    }
+
+    .btn-retirer-favori i {
+        color: var(--rouge-corail);
+        font-size: 24px;
+    }
+
+    .notification-badge {
+        background: rgba(232, 135, 79, 0.15);
+        color: var(--orange-mandarine);
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        margin-bottom: 10px;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+</style>
+
+<div class="favoris-container">
+    <div class="favoris-header">
+        <h1>
+            <i class="material-icons" style="font-size: 2.5rem;">favorite</i>
+            Mes favoris
+            {% if favoris.count > 0 %}
+            <span style="font-size: 1.5rem; opacity: 0.8;">({{ favoris.count }})</span>
+            {% endif %}
+        </h1>
+        <a href="{% url 'vetements:marketplace_liste' %}" class="btn" style="background: white; color: var(--rouge-corail);">
+            <i class="material-icons">arrow_back</i>
+            Retour au marketplace
+        </a>
+    </div>
+
+    <!-- Annonces favorites -->
+    {% if favoris %}
+    <div class="annonces-grid">
+        {% for favori in favoris %}
+        <a href="{% url 'vetements:marketplace_annonce_detail' favori.annonce.id %}" class="annonce-card">
+            <div class="annonce-image {% if not favori.annonce.vetement.image %}no-image{% endif %}">
+                {% if favori.annonce.vetement.image %}
+                <img src="{{ favori.annonce.vetement.image.url }}" alt="{{ favori.annonce.vetement.nom }}">
+                {% else %}
+                <i class="material-icons" style="font-size: 80px; color: var(--rouge-corail);">checkroom</i>
+                {% endif %}
+                <button type="button" class="btn-retirer-favori"
+                        onclick="event.preventDefault(); event.stopPropagation(); retirerFavori({{ favori.annonce.id }}, this.closest('.annonce-card'));">
+                    <i class="material-icons">favorite</i>
+                </button>
+                <div class="annonce-prix">{{ favori.annonce.prix_vente }}€</div>
+            </div>
+            <div class="annonce-body">
+                {% if favori.notification_changement_prix %}
+                <div class="notification-badge">
+                    <i class="material-icons" style="font-size: 16px;">notifications_active</i>
+                    Notifications activées
+                </div>
+                {% endif %}
+                <h3 class="annonce-titre">{{ favori.annonce.vetement.nom }}</h3>
+                <div class="annonce-vendeur">
+                    <i class="material-icons" style="font-size: 14px;">person</i>
+                    {{ favori.annonce.vendeur.username }}
+                </div>
+                <div class="annonce-badges">
+                    <span class="badge badge-favori-date">
+                        <i class="material-icons" style="font-size: 12px;">schedule</i>
+                        Ajouté {{ favori.date_ajout|timesince }}
+                    </span>
+                    {% if favori.annonce.negociable %}
+                    <span class="badge badge-negociable">
+                        <i class="material-icons" style="font-size: 12px;">handshake</i>
+                        Négociable
+                    </span>
+                    {% endif %}
+                    {% if favori.annonce.livraison_possible %}
+                    <span class="badge badge-livraison">
+                        <i class="material-icons" style="font-size: 12px;">local_shipping</i>
+                        Livraison
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="material-icons">favorite_border</i>
+        <h2>Aucun favori</h2>
+        <p>Vous n'avez pas encore ajouté d'annonces à vos favoris.</p>
+        <a href="{% url 'vetements:marketplace_liste' %}" class="btn btn-primary" style="margin-top: 20px;">
+            <i class="material-icons">store</i>
+            Explorer le marketplace
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+function retirerFavori(annonceId, card) {
+    fetch(`{% url 'vetements:marketplace_toggle_favori' 0 %}`.replace('0', annonceId), {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}',
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Supprimer la carte avec animation
+        card.style.opacity = '0';
+        card.style.transform = 'scale(0.9)';
+        setTimeout(() => {
+            card.remove();
+            // Vérifier s'il reste des favoris
+            const grid = document.querySelector('.annonces-grid');
+            if (grid && grid.children.length === 0) {
+                location.reload();
+            }
+        }, 300);
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        alert('Erreur lors du retrait du favori');
+    });
+}
+</script>
+{% endblock %}
