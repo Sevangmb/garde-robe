@@ -1,0 +1,28 @@
+databases:
+  - name: garde-robe-db
+    databaseName: garde_robe_db
+    user: garde_robe_user
+    plan: free
+
+services:
+  - type: web
+    name: garde-robe
+    runtime: python
+    plan: free
+    buildCommand: "./build.sh"
+    startCommand: "gunicorn gestion_vetements.wsgi:application"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: False
+      - key: ALLOWED_HOSTS
+        sync: false
+      - key: DATABASE_URL
+        fromDatabase:
+          name: garde-robe-db
+          property: connectionString
+      - key: CSRF_TRUSTED_ORIGINS
+        sync: false

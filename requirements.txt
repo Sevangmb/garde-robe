@@ -16,6 +16,7 @@ python-decouple>=3.8  # Environment variables management
 # django-debug-toolbar>=4.0
 # coverage>=7.0  # Code coverage
 
-# Deployment (optionnel)
-# gunicorn>=21.0  # WSGI HTTP Server
-# whitenoise>=6.0  # Static files serving
+# Deployment
+gunicorn>=21.0  # WSGI HTTP Server
+whitenoise>=6.0  # Static files serving
+dj-database-url>=2.0  # Database URL parsing
