@@ -46,6 +46,11 @@ Thumbs.db
 .env
 .env.local
 
+# Scripts de migration et données sensibles
+create_db.py
+migrate_data.py
+data_export.json
+
 # Coverage reports
 htmlcov/
 .coverage

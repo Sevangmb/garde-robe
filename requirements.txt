@@ -5,9 +5,12 @@
 Django>=4.2,<5.0
 pillow>=11.0.0  # Image processing for clothing photos
 
-# Database (optionnel pour production)
-# psycopg2-binary>=2.9  # PostgreSQL
-# mysqlclient>=2.1  # MySQL
+# Database
+psycopg2-binary>=2.9  # PostgreSQL (production sur Unraid)
+django-cors-headers>=4.0  # CORS pour l'app mobile
+
+# Configuration
+python-decouple>=3.8  # Environment variables management
 
 # Development tools (optionnel)
 # django-debug-toolbar>=4.0
