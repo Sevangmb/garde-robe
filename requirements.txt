@@ -20,3 +20,4 @@ python-decouple>=3.8  # Environment variables management
 gunicorn>=21.0  # WSGI HTTP Server
 whitenoise>=6.0  # Static files serving
 dj-database-url>=2.0  # Database URL parsing
+paramiko>=3.0  # SFTP pour upload images vers Unraid

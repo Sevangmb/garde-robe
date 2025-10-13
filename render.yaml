@@ -1,8 +1,5 @@
-databases:
-  - name: garde-robe-db
-    databaseName: garde_robe_db
-    user: garde_robe_user
-    plan: free
+# Base de données PostgreSQL hébergée sur Unraid
+# (pas besoin de créer une base de données sur Render)
 
 services:
   - type: web
@@ -14,15 +11,37 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.0
+      - key: DJANGO_SETTINGS_MODULE
+        value: gestion_vetements.settings_prod
       - key: SECRET_KEY
         generateValue: true
       - key: DEBUG
         value: False
       - key: ALLOWED_HOSTS
         sync: false
-      - key: DATABASE_URL
-        fromDatabase:
-          name: garde-robe-db
-          property: connectionString
       - key: CSRF_TRUSTED_ORIGINS
         sync: false
+      # Database PostgreSQL sur Unraid (à configurer manuellement)
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        value: 5432
+      - key: DB_NAME
+        value: garde_robe_db
+      - key: DB_USER
+        value: garde_robe_user
+      - key: DB_PASSWORD
+        sync: false
+      # Media Storage nginx Unraid (à configurer manuellement)
+      - key: MEDIA_URL
+        sync: false
+      - key: UNRAID_SFTP_HOST
+        sync: false
+      - key: UNRAID_SFTP_PORT
+        value: 22
+      - key: UNRAID_SFTP_USER
+        value: root
+      - key: UNRAID_SFTP_PASSWORD
+        sync: false
+      - key: UNRAID_MEDIA_PATH
+        value: /mnt/user/appdata/garde-robe/media/
