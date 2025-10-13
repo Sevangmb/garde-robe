@@ -14,6 +14,9 @@ urlpatterns = [
     path('', views.accueil, name='accueil'),
     path('vetements/', views.VetementListView.as_view(), name='liste_vetements'),
     path('vetements/<int:pk>/', views.VetementDetailView.as_view(), name='detail_vetement'),
+    path('vetements/ajouter/', views.vetement_create, name='vetement_create'),
+    path('vetements/<int:pk>/modifier/', views.vetement_edit, name='vetement_edit'),
+    path('vetements/<int:pk>/supprimer/', views.vetement_delete, name='vetement_delete'),
     path('categorie/<int:categorie_id>/', views.vetements_par_categorie, name='categorie'),
     path('entretien/', views.entretien, name='entretien'),
     path('tenues/', views.tenues_list, name='tenues_list'),
@@ -27,6 +30,9 @@ urlpatterns = [
     path('valises/<int:pk>/supprimer/', views.valise_delete, name='valise_delete'),
     path('valises/<int:pk>/statut/', views.valise_update_status, name='valise_update_status'),
     path('valises/<int:pk>/copier/', views.valise_copy, name='valise_copy'),
+    path('valises/<int:pk>/checklist/', views.valise_checklist, name='valise_checklist'),
+    path('valises/<int:pk>/toggle/<int:item_id>/', views.valise_toggle_item, name='valise_toggle_item'),
+    path('valises/<int:pk>/ajouter/', views.valise_add_items, name='valise_add_items'),
     path('statistiques/', views.statistiques, name='statistiques'),
 
     # Messaging
@@ -56,4 +62,10 @@ urlpatterns = [
     path('marketplace/creer/<int:vetement_id>/', views.marketplace_creer_annonce, name='marketplace_creer_annonce'),
     path('marketplace/modifier/<int:annonce_id>/', views.marketplace_modifier_annonce, name='marketplace_modifier_annonce'),
     path('marketplace/supprimer/<int:annonce_id>/', views.marketplace_supprimer_annonce, name='marketplace_supprimer_annonce'),
+
+    # Calendrier
+    path('calendrier/', views.calendrier_mensuel, name='calendrier_mensuel'),
+    path('calendrier/evenement/creer/', views.evenement_create, name='evenement_create'),
+    path('calendrier/evenement/<int:pk>/modifier/', views.evenement_edit, name='evenement_edit'),
+    path('calendrier/evenement/<int:pk>/supprimer/', views.evenement_delete, name='evenement_delete'),
 ]

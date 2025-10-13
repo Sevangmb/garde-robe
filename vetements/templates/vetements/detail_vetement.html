@@ -148,7 +148,8 @@
 
         <div class="actions">
             <a href="{% url 'vetements:liste_vetements' %}" class="btn btn-secondary">Retour au catalogue</a>
-            <a href="/admin/vetements/vetement/{{ vetement.pk }}/change/" class="btn btn-primary">Modifier</a>
+            <a href="{% url 'vetements:vetement_edit' vetement.pk %}" class="btn btn-primary">Modifier</a>
+            <a href="{% url 'vetements:vetement_delete' vetement.pk %}" class="btn btn-danger">Supprimer</a>
         </div>
     </div>
 </div>

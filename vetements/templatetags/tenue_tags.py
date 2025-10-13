@@ -46,3 +46,14 @@ def split_outfit(tenue):
     }
 
     return result
+
+
+@register.filter
+def get_item(dictionary, key):
+    """
+    Récupère un élément d'un dictionnaire par sa clé.
+    Utilisé pour accéder aux événements par jour dans le calendrier.
+    """
+    if dictionary and isinstance(dictionary, dict):
+        return dictionary.get(key)
+    return None

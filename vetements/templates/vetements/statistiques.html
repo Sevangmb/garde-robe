@@ -444,7 +444,151 @@
         </div>
     </div>
     {% endif %}
+
+    <!-- NOUVEAUX GRAPHIQUES AVANCÉS -->
+
+    <!-- Graphique Utilisation Mensuelle -->
+    {% if utilisation_mensuelle %}
+    <div class="chart-card" style="grid-column: 1 / -1;">
+        <h2><i class="material-icons">show_chart</i>Utilisation Mensuelle (12 derniers mois)</h2>
+        <div class="chart-container">
+            <canvas id="utilisationChart"></canvas>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Graphique Coût par Portage par Catégorie -->
+    {% if cout_par_categorie %}
+    <div class="chart-card">
+        <h2><i class="material-icons">savings</i>Rentabilité par Catégorie</h2>
+        <div class="chart-container">
+            <canvas id="coutCategorieChart"></canvas>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Palette de Couleurs Dominante -->
+    {% if couleurs_dominantes %}
+    <div class="chart-card">
+        <h2><i class="material-icons">palette</i>Palette de Couleurs Dominante</h2>
+        <div style="padding: 20px 0;">
+            {% for couleur in couleurs_dominantes %}
+            <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                <div style="width: 50px; height: 50px; border-radius: 8px; background-color: {{ couleur.couleur__code_hex|default:'#CCCCCC' }}; border: 2px solid #F5F3F0; margin-right: 15px;"></div>
+                <div style="flex: 1;">
+                    <div style="font-weight: 500; color: #3A3632; margin-bottom: 5px;">{{ couleur.couleur__nom }}</div>
+                    <div style="font-size: 0.9rem; color: #6B6560;">{{ couleur.count }} vêtement{{ couleur.count|pluralize }}</div>
+                </div>
+                <div style="width: 100px;">
+                    <div style="background: #F5F3F0; height: 8px; border-radius: 4px; overflow: hidden;">
+                        <div style="background: {{ couleur.couleur__code_hex|default:'#CCCCCC' }}; height: 100%; width: {% widthratio couleur.count total_vetements 100 %}%;"></div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
 </div>
+
+<!-- Alertes Intelligentes -->
+{% if alertes %}
+<div class="section">
+    <h2><i class="material-icons">notifications_active</i>Alertes & Recommandations</h2>
+    {% for alerte in alertes %}
+    <div class="alert {{ alerte.type }}">
+        <i class="material-icons">{{ alerte.icon }}</i>
+        <div>
+            <strong>{{ alerte.titre }}</strong><br>
+            {{ alerte.message }}
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- Section KPIs Supplémentaires -->
+<div class="section">
+    <h2><i class="material-icons">assessment</i>Indicateurs de Performance</h2>
+    <div class="kpi-grid">
+        <div class="kpi-card primary">
+            <div class="kpi-header">
+                <div class="kpi-icon">
+                    <i class="material-icons">repeat</i>
+                </div>
+                <div class="kpi-title">Taux de Rotation</div>
+            </div>
+            <div class="kpi-value">{{ taux_rotation|floatformat:1 }}%</div>
+            <div class="kpi-label">{{ vetements_recents }} vêtement{{ vetements_recents|pluralize }} porté{{ vetements_recents|pluralize }} ce mois</div>
+        </div>
+
+        {% if valeur_portee > 0 %}
+        <div class="kpi-card quaternary">
+            <div class="kpi-header">
+                <div class="kpi-icon">
+                    <i class="material-icons">check_circle</i>
+                </div>
+                <div class="kpi-title">Valeur Utilisée</div>
+            </div>
+            <div class="kpi-value">{{ valeur_portee|floatformat:0 }} €</div>
+            <div class="kpi-label">vêtements portés au moins une fois</div>
+        </div>
+        {% endif %}
+
+        {% if valeur_non_portee > 0 %}
+        <div class="kpi-card secondary">
+            <div class="kpi-header">
+                <div class="kpi-icon">
+                    <i class="material-icons">cancel</i>
+                </div>
+                <div class="kpi-title">Valeur Non Utilisée</div>
+            </div>
+            <div class="kpi-value">{{ valeur_non_portee|floatformat:0 }} €</div>
+            <div class="kpi-label">vêtements jamais portés</div>
+            {% if total_depense > 0 %}
+            <div class="kpi-trend negative">
+                <i class="material-icons tiny">arrow_downward</i>
+                {% widthratio valeur_non_portee total_depense 100 %}% de l'investissement total
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Section Top Vêtements Rentables -->
+{% if plus_rentables %}
+<div class="section">
+    <h2><i class="material-icons">emoji_events</i>Top 10 Vêtements les Plus Rentables</h2>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Vêtement</th>
+                <th>Catégorie</th>
+                <th>Prix d'achat</th>
+                <th>Portages</th>
+                <th>Coût/Portage</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for vetement in plus_rentables %}
+            <tr>
+                <td>
+                    <a href="{% url 'vetements:detail_vetement' vetement.pk %}" style="color: #8C7A9E; font-weight: 500;">
+                        {{ vetement.nom }}
+                    </a>
+                    {% if vetement.favori %}⭐{% endif %}
+                </td>
+                <td>{{ vetement.categorie.nom }}</td>
+                <td>{{ vetement.prix_achat|floatformat:2 }} €</td>
+                <td><strong style="color: #B09199;">{{ vetement.nombre_portage }}</strong></td>
+                <td><strong style="color: #4caf50;">{{ vetement.cout_par_portage|floatformat:2 }} €</strong></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
 
 <!-- Section Top vêtements portés (tableau détaillé) -->
 <div class="section">
@@ -737,6 +881,127 @@
                     }
                 },
                 x: {
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        color: colors.gris
+                    }
+                }
+            }
+        }
+    });
+    {% endif %}
+
+    // NOUVEAUX GRAPHIQUES AVANCÉS
+
+    // Graphique Utilisation Mensuelle (Line Chart)
+    {% if utilisation_mensuelle %}
+    const utilisationCtx = document.getElementById('utilisationChart').getContext('2d');
+    new Chart(utilisationCtx, {
+        type: 'line',
+        data: {
+            labels: [{% for label in labels_mois %}'{{ label }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
+            datasets: [{
+                label: 'Vêtements portés',
+                data: [{% for val in utilisation_mensuelle %}{{ val }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+                backgroundColor: colors.mauveRose + '40',
+                borderColor: colors.mauveRose,
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4,
+                pointRadius: 5,
+                pointBackgroundColor: colors.mauveRose,
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointHoverRadius: 7
+            }]
+        },
+        options: {
+            ...commonOptions,
+            plugins: {
+                ...commonOptions.plugins,
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `${context.parsed.y} vêtement${context.parsed.y > 1 ? 's' : ''} porté${context.parsed.y > 1 ? 's' : ''}`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: '#F5F3F0'
+                    },
+                    ticks: {
+                        color: colors.gris,
+                        stepSize: 1
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        color: colors.gris,
+                        maxRotation: 45,
+                        minRotation: 45
+                    }
+                }
+            }
+        }
+    });
+    {% endif %}
+
+    // Graphique Coût par Portage par Catégorie (Bar horizontal)
+    {% if cout_par_categorie %}
+    const coutCategorieCtx = document.getElementById('coutCategorieChart').getContext('2d');
+    new Chart(coutCategorieCtx, {
+        type: 'bar',
+        data: {
+            labels: [{% for item in cout_par_categorie %}'{{ item.categorie }}'{% if not forloop.last %}, {% endif %}{% endfor %}],
+            datasets: [{
+                label: 'Coût moyen par portage (€)',
+                data: [{% for item in cout_par_categorie %}{{ item.cout_moyen|floatformat:2 }}{% if not forloop.last %}, {% endif %}{% endfor %}],
+                backgroundColor: colors.orangeMandarine,
+                borderRadius: 6
+            }]
+        },
+        options: {
+            ...commonOptions,
+            indexAxis: 'y',
+            plugins: {
+                ...commonOptions.plugins,
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return `${context.parsed.x.toFixed(2)} € par portage`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    grid: {
+                        color: '#F5F3F0'
+                    },
+                    ticks: {
+                        color: colors.gris,
+                        callback: function(value) {
+                            return value.toFixed(2) + ' €';
+                        }
+                    }
+                },
+                y: {
                     grid: {
                         display: false
                     },

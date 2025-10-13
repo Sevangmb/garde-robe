@@ -219,6 +219,7 @@
 
     <!-- Dropdown Plus -->
     <ul id="plus-dropdown" class="dropdown-content">
+        <li><a href="{% url 'vetements:calendrier_mensuel' %}"><i class="material-icons">calendar_today</i>Calendrier</a></li>
         <li><a href="{% url 'vetements:statistiques' %}"><i class="material-icons">bar_chart</i>Statistiques</a></li>
         <li><a href="{% url 'vetements:user_profile' %}"><i class="material-icons">person</i>Mon Profil</a></li>
         {% if user.is_superuser %}
@@ -277,6 +278,11 @@
         <li class="{% if request.resolver_match.url_name == 'fring_widget' %}active{% endif %}">
             <a href="{% url 'vetements:fring_widget' %}" class="waves-effect">
                 <i class="material-icons" style="color: #F5D987;">auto_awesome</i>Fring - Créer une tenue
+            </a>
+        </li>
+        <li class="{% if 'calendrier' in request.resolver_match.url_name or 'evenement' in request.resolver_match.url_name %}active{% endif %}">
+            <a href="{% url 'vetements:calendrier_mensuel' %}" class="waves-effect">
+                <i class="material-icons" style="color: #8C7A9E;">calendar_today</i>Calendrier
             </a>
         </li>
         <li class="{% if request.resolver_match.url_name == 'entretien' %}active{% endif %}">

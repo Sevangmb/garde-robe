@@ -223,12 +223,16 @@ class Valise(models.Model):
     climat = models.CharField(max_length=50, blank=True, verbose_name="Climat", help_text="Ex: Chaud, Froid, Tempéré")
 
     # Contenu de la valise
-    vetements = models.ManyToManyField(Vetement, related_name='valises', verbose_name="Vêtements emportés")
+    vetements = models.ManyToManyField(Vetement, related_name='valises_old', blank=True, verbose_name="Vêtements emportés (ancien système)")
     tenues = models.ManyToManyField(Tenue, related_name='valises', blank=True, verbose_name="Tenues prévues")
 
     # Statut et organisation
     statut = models.CharField(max_length=20, choices=STATUT_CHOICES, default='preparation', verbose_name="Statut")
     liste_articles_supplementaires = models.TextField(blank=True, verbose_name="Autres articles", help_text="Articles non-vêtements: trousse de toilette, médicaments, chargeurs, etc.")
+
+    # Nouveau: Poids estimé de la valise (en kg)
+    poids_estime = models.DecimalField(max_digits=5, decimal_places=2, default=0, validators=[MinValueValidator(0)], verbose_name="Poids estimé (kg)", help_text="Calculé automatiquement")
+    poids_max = models.DecimalField(max_digits=5, decimal_places=2, default=20, validators=[MinValueValidator(0)], verbose_name="Poids maximum autorisé (kg)")
 
     # Notes
     notes = models.TextField(blank=True, verbose_name="Notes", help_text="Activités prévues, contraintes, rappels...")
@@ -255,8 +259,27 @@ class Valise(models.Model):
 
     @property
     def nombre_vetements(self):
-        """Compte le nombre de vêtements dans la valise"""
-        return self.vetements.count()
+        """Compte le nombre de vêtements dans la valise (nouveau système)"""
+        return self.items.count()
+
+    @property
+    def nombre_emballe(self):
+        """Compte le nombre d'items déjà emballés"""
+        return self.items.filter(emballe=True).count()
+
+    @property
+    def pourcentage_completion(self):
+        """Calcule le pourcentage de completion de la valise"""
+        total = self.items.count()
+        if total == 0:
+            return 0
+        return int((self.nombre_emballe / total) * 100)
+
+    @property
+    def poids_total_kg(self):
+        """Calcule le poids total des items en kg"""
+        total_grammes = sum([item.poids_estime for item in self.items.all()])
+        return round(total_grammes / 1000, 2)
 
     @property
     def est_passee(self):
@@ -276,6 +299,50 @@ class Valise(models.Model):
         """Vérifie si le voyage est à venir"""
         from datetime import date
         return self.date_depart > date.today() if self.date_depart else False
+
+
+class ItemValise(models.Model):
+    """Table intermédiaire pour tracker l'état d'emballage de chaque vêtement dans une valise"""
+    CATEGORIES_VALISE = [
+        ('vetements', 'Vêtements'),
+        ('chaussures', 'Chaussures'),
+        ('sous_vetements', 'Sous-vêtements'),
+        ('accessoires', 'Accessoires'),
+        ('toilette', 'Toilette'),
+        ('electronique', 'Électronique'),
+        ('documents', 'Documents'),
+        ('sante', 'Santé'),
+        ('autre', 'Autre'),
+    ]
+
+    valise = models.ForeignKey(Valise, on_delete=models.CASCADE, related_name='items', verbose_name="Valise")
+    vetement = models.ForeignKey(Vetement, on_delete=models.CASCADE, verbose_name="Vêtement")
+
+    # État d'emballage
+    emballe = models.BooleanField(default=False, verbose_name="Emballé")
+
+    # Catégorisation pour une meilleure organisation
+    categorie_valise = models.CharField(max_length=20, choices=CATEGORIES_VALISE, default='vetements', verbose_name="Catégorie dans la valise")
+
+    # Poids estimé de l'item (en grammes)
+    poids_estime = models.IntegerField(default=200, validators=[MinValueValidator(0)], verbose_name="Poids estimé (g)", help_text="Poids moyen de l'article")
+
+    # Ordre d'affichage
+    ordre = models.IntegerField(default=0, verbose_name="Ordre")
+
+    # Notes spécifiques à cet item dans cette valise
+    note = models.CharField(max_length=200, blank=True, verbose_name="Note", help_text="Ex: À laver avant de partir, Fragile, etc.")
+
+    date_ajout = models.DateTimeField(auto_now_add=True, verbose_name="Ajouté le")
+
+    class Meta:
+        verbose_name = "Item de valise"
+        verbose_name_plural = "Items de valise"
+        unique_together = ['valise', 'vetement']
+        ordering = ['categorie_valise', 'ordre', 'date_ajout']
+
+    def __str__(self):
+        return f"{self.vetement.nom} dans {self.valise.nom} ({'✓' if self.emballe else '○'})"
 
 
 class Message(models.Model):
@@ -620,3 +687,78 @@ class ActionModeration(models.Model):
     
     def __str__(self):
         return f"{self.get_type_action_display()} - {self.utilisateur.username} ({self.date_action.strftime('%d/%m/%Y')})"
+
+
+class EvenementTenue(models.Model):
+    """Événement avec tenue planifiée dans le calendrier"""
+
+    TYPE_EVENEMENT_CHOICES = [
+        ('travail', 'Travail'),
+        ('reunion', 'Réunion'),
+        ('sortie', 'Sortie'),
+        ('rendez_vous', 'Rendez-vous'),
+        ('ceremonie', 'Cérémonie'),
+        ('sport', 'Sport'),
+        ('voyage', 'Voyage'),
+        ('autre', 'Autre'),
+    ]
+
+    # Propriétaire
+    proprietaire = models.ForeignKey(User, on_delete=models.CASCADE, related_name='evenements', verbose_name="Propriétaire")
+
+    # Informations de l'événement
+    titre = models.CharField(max_length=200, verbose_name="Titre", help_text="Ex: Réunion client, Dîner restaurant")
+    description = models.TextField(blank=True, verbose_name="Description")
+    type_evenement = models.CharField(max_length=20, choices=TYPE_EVENEMENT_CHOICES, default='autre', verbose_name="Type d'événement")
+
+    # Date et heure
+    date = models.DateField(verbose_name="Date")
+    heure_debut = models.TimeField(null=True, blank=True, verbose_name="Heure de début")
+    heure_fin = models.TimeField(null=True, blank=True, verbose_name="Heure de fin")
+    toute_journee = models.BooleanField(default=False, verbose_name="Événement toute la journée")
+
+    # Tenue planifiée
+    tenue = models.ForeignKey(Tenue, on_delete=models.SET_NULL, null=True, blank=True, related_name='evenements', verbose_name="Tenue prévue")
+
+    # Lieu
+    lieu = models.CharField(max_length=200, blank=True, verbose_name="Lieu")
+
+    # Rappel
+    rappel = models.BooleanField(default=False, verbose_name="Activer un rappel")
+    rappel_minutes_avant = models.IntegerField(default=60, validators=[MinValueValidator(0)], verbose_name="Rappel (minutes avant)", help_text="Nombre de minutes avant l'événement")
+
+    # Météo prévue (optionnel)
+    meteo_prevue = models.CharField(max_length=100, blank=True, verbose_name="Météo prévue", help_text="Ex: Ensoleillé, Pluvieux")
+
+    # Notes
+    notes = models.TextField(blank=True, verbose_name="Notes")
+
+    # Métadonnées
+    date_creation = models.DateTimeField(auto_now_add=True, verbose_name="Date de création")
+    date_modification = models.DateTimeField(auto_now=True, verbose_name="Dernière modification")
+
+    class Meta:
+        verbose_name = "Événement"
+        verbose_name_plural = "Événements"
+        ordering = ['date', 'heure_debut']
+
+    def __str__(self):
+        return f"{self.titre} - {self.date.strftime('%d/%m/%Y')}"
+
+    @property
+    def est_passe(self):
+        """Vérifie si l'événement est passé"""
+        from datetime import date
+        return self.date < date.today()
+
+    @property
+    def est_aujourdhui(self):
+        """Vérifie si l'événement est aujourd'hui"""
+        from datetime import date
+        return self.date == date.today()
+
+    @property
+    def est_a_venir(self):
+        """Vérifie si l'événement est à venir"""
+        from datetime import date
+        return self.date > date.today()

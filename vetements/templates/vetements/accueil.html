@@ -147,10 +147,10 @@
                     <a href="{% url 'vetements:liste_vetements' %}" class="btn waves-effect waves-light white indigo-text text-darken-2" style="margin: 5px;">
                         <i class="material-icons left">view_list</i>Voir ma garde-robe
                     </a>
-                    <a href="/admin/vetements/vetement/add/" class="btn waves-effect waves-light green" style="margin: 5px;">
+                    <a href="{% url 'vetements:vetement_create' %}" class="btn waves-effect waves-light green" style="margin: 5px;">
                         <i class="material-icons left">add</i>Ajouter un vêtement
                     </a>
-                    <a href="/admin/vetements/tenue/add/" class="btn waves-effect waves-light purple" style="margin: 5px;">
+                    <a href="{% url 'vetements:fring_widget' %}" class="btn waves-effect waves-light purple" style="margin: 5px;">
                         <i class="material-icons left">style</i>Créer une tenue
                     </a>
                     <a href="{% url 'vetements:statistiques' %}" class="btn waves-effect waves-light blue" style="margin: 5px;">

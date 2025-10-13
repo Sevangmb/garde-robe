@@ -1,0 +1,702 @@
+{% extends 'vetements/base.html' %}
+{% load valise_tags %}
+
+{% block title %}{{ valise.nom }} - Checklist Interactive - Ma Garde-Robe{% endblock %}
+
+{% block content %}
+<div class="checklist-container">
+    <!-- Header avec progression -->
+    <div class="checklist-header">
+        <div class="trip-info">
+            <h1>🧳 {{ valise.nom }}</h1>
+            <div class="trip-meta">
+                <span class="meta-item">📍 {{ valise.destination }}</span>
+                <span class="meta-item">📅 {{ valise.date_depart|date:"d/m/Y" }} - {{ valise.date_retour|date:"d/m/Y" }}</span>
+                <span class="meta-item">⏱️ {{ valise.duree_sejour }} jour(s)</span>
+            </div>
+            {% if valise.meteo_prevue %}
+            <div class="weather-banner">
+                🌤️ {{ valise.meteo_prevue }}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Barre de progression -->
+        <div class="progress-section">
+            <div class="progress-stats">
+                <div class="stat">
+                    <span class="stat-value" id="packed-count">{{ valise.nombre_emballe }}</span>
+                    <span class="stat-label">/ {{ valise.nombre_vetements }}</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-value" id="percentage">{{ valise.pourcentage_completion }}%</span>
+                    <span class="stat-label">Complété</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-value" id="weight">{{ valise.poids_total_kg }}kg</span>
+                    <span class="stat-label">/ {{ valise.poids_max }}kg</span>
+                </div>
+            </div>
+            <div class="progress-bar-container">
+                <div class="progress-bar" id="progress-bar" style="width: {{ valise.pourcentage_completion }}%;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Checklist par catégories -->
+    <div class="checklist-content">
+        {% regroup items by categorie_valise as category_list %}
+
+        {% for category in category_list %}
+        <div class="category-section" data-category="{{ category.grouper }}">
+            <div class="category-header" onclick="toggleCategory('{{ category.grouper }}')">
+                <div class="category-title">
+                    <span class="category-icon">{{ category.grouper|category_icon }}</span>
+                    <h2>{{ category.grouper|category_name }}</h2>
+                    <span class="category-count">({{ category.list|length }} items)</span>
+                </div>
+                <div class="category-progress">
+                    <span class="category-packed-count" id="cat-{{ category.grouper }}-count">
+                        {{ category.list|packed_count }}
+                    </span>
+                    <span>/{{ category.list|length }}</span>
+                    <span class="toggle-icon">▼</span>
+                </div>
+            </div>
+
+            <div class="category-items" id="items-{{ category.grouper }}">
+                {% for item in category.list %}
+                <div class="checklist-item {% if item.emballe %}packed{% endif %}"
+                     data-item-id="{{ item.id }}"
+                     data-weight="{{ item.poids_estime }}">
+                    <div class="item-checkbox-container">
+                        <input type="checkbox"
+                               id="item-{{ item.id }}"
+                               class="item-checkbox"
+                               {% if item.emballe %}checked{% endif %}
+                               onchange="toggleItem({{ item.id }}, this.checked)">
+                        <label for="item-{{ item.id }}" class="custom-checkbox"></label>
+                    </div>
+
+                    <div class="item-content">
+                        <div class="item-main">
+                            {% if item.vetement.image %}
+                            <img src="{{ item.vetement.image.url }}" alt="{{ item.vetement.nom }}" class="item-thumbnail">
+                            {% else %}
+                            <div class="item-placeholder">👕</div>
+                            {% endif %}
+
+                            <div class="item-info">
+                                <h3 class="item-name">{{ item.vetement.nom }}</h3>
+                                <div class="item-details">
+                                    <span class="item-detail">{{ item.vetement.categorie.nom }}</span>
+                                    {% if item.vetement.couleur %}
+                                    <span class="item-detail" style="color: {{ item.vetement.couleur.code_hex }};">
+                                        ● {{ item.vetement.couleur.nom }}
+                                    </span>
+                                    {% endif %}
+                                    {% if item.vetement.taille %}
+                                    <span class="item-detail">Taille {{ item.vetement.taille.nom }}</span>
+                                    {% endif %}
+                                </div>
+                                {% if item.note %}
+                                <div class="item-note">📝 {{ item.note }}</div>
+                                {% endif %}
+                                {% if item.vetement.a_laver %}
+                                <div class="item-warning">⚠️ À laver avant le départ</div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="item-weight">
+                            {{ item.poids_estime }}g
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+
+        <!-- Message si vide -->
+        {% if not items %}
+        <div class="empty-state">
+            <div class="empty-icon">📦</div>
+            <h3>Aucun vêtement ajouté</h3>
+            <p>Commencez à préparer votre valise en ajoutant des vêtements!</p>
+            <a href="{% url 'vetements:valise_add_items' valise.pk %}" class="btn btn-primary">
+                ➕ Ajouter des vêtements
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Actions flottantes -->
+    <div class="floating-actions">
+        <a href="{% url 'vetements:valise_add_items' valise.pk %}" class="fab" title="Ajouter des vêtements">
+            ➕
+        </a>
+    </div>
+
+    <!-- Bottom navigation -->
+    <div class="bottom-nav">
+        <a href="{% url 'vetements:valises_list' %}" class="nav-btn">
+            <span class="nav-icon">⬅️</span>
+            <span>Retour</span>
+        </a>
+        <a href="{% url 'vetements:valise_detail' valise.pk %}" class="nav-btn">
+            <span class="nav-icon">ℹ️</span>
+            <span>Infos</span>
+        </a>
+        <button onclick="markAllPacked()" class="nav-btn">
+            <span class="nav-icon">✅</span>
+            <span>Tout cocher</span>
+        </button>
+        <a href="{% url 'vetements:valise_export_pdf' valise.pk %}" class="nav-btn">
+            <span class="nav-icon">📄</span>
+            <span>Export PDF</span>
+        </a>
+    </div>
+</div>
+
+<style>
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+.checklist-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding-bottom: 80px;
+}
+
+.checklist-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 0 0 20px 20px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+}
+
+.trip-info h1 {
+    font-size: 1.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.trip-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.meta-item {
+    font-size: 0.95rem;
+    opacity: 0.95;
+}
+
+.weather-banner {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 0.75rem;
+    border-radius: 10px;
+    font-size: 1rem;
+    backdrop-filter: blur(10px);
+}
+
+.progress-section {
+    margin-top: 1.5rem;
+}
+
+.progress-stats {
+    display: flex;
+    justify-content: space-around;
+    margin-bottom: 1rem;
+}
+
+.stat {
+    text-align: center;
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: bold;
+    display: block;
+}
+
+.stat-label {
+    font-size: 0.85rem;
+    opacity: 0.9;
+}
+
+.progress-bar-container {
+    height: 12px;
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
+    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 10px;
+}
+
+.checklist-content {
+    padding: 0 1rem;
+}
+
+.category-section {
+    margin-bottom: 1.5rem;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    overflow: hidden;
+}
+
+.category-header {
+    background: #f7f9fc;
+    padding: 1rem 1.25rem;
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #e1e8ed;
+    transition: background 0.2s;
+}
+
+.category-header:hover {
+    background: #eef2f7;
+}
+
+.category-title {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.category-icon {
+    font-size: 1.5rem;
+}
+
+.category-title h2 {
+    font-size: 1.1rem;
+    color: #2d3748;
+    font-weight: 600;
+}
+
+.category-count {
+    font-size: 0.9rem;
+    color: #718096;
+}
+
+.category-progress {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.95rem;
+    color: #4a5568;
+}
+
+.category-packed-count {
+    font-weight: 600;
+    color: #48bb78;
+}
+
+.toggle-icon {
+    transition: transform 0.3s;
+}
+
+.category-section.collapsed .toggle-icon {
+    transform: rotate(-90deg);
+}
+
+.category-items {
+    max-height: 2000px;
+    overflow: hidden;
+    transition: max-height 0.3s ease-in-out, opacity 0.3s;
+}
+
+.category-section.collapsed .category-items {
+    max-height: 0;
+    opacity: 0;
+}
+
+.checklist-item {
+    display: flex;
+    align-items: flex-start;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid #f1f5f9;
+    transition: all 0.3s;
+}
+
+.checklist-item:last-child {
+    border-bottom: none;
+}
+
+.checklist-item.packed {
+    opacity: 0.6;
+}
+
+.checklist-item.packed .item-name {
+    text-decoration: line-through;
+    color: #a0aec0;
+}
+
+.item-checkbox-container {
+    margin-right: 1rem;
+    display: flex;
+    align-items: center;
+}
+
+.item-checkbox {
+    display: none;
+}
+
+.custom-checkbox {
+    width: 28px;
+    height: 28px;
+    border: 2px solid #cbd5e0;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: white;
+}
+
+.custom-checkbox:hover {
+    border-color: #667eea;
+}
+
+.item-checkbox:checked + .custom-checkbox {
+    background: #48bb78;
+    border-color: #48bb78;
+}
+
+.item-checkbox:checked + .custom-checkbox::after {
+    content: "✓";
+    color: white;
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+.item-content {
+    flex: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.item-main {
+    display: flex;
+    gap: 1rem;
+    flex: 1;
+}
+
+.item-thumbnail {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.item-placeholder {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e0 100%);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+}
+
+.item-info {
+    flex: 1;
+}
+
+.item-name {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #2d3748;
+    margin-bottom: 0.35rem;
+}
+
+.item-details {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    font-size: 0.85rem;
+    color: #718096;
+}
+
+.item-detail {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.item-note {
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+    background: #fff3cd;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    color: #856404;
+}
+
+.item-warning {
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+    background: #ffe8e8;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    color: #c53030;
+}
+
+.item-weight {
+    font-size: 0.9rem;
+    color: #a0aec0;
+    font-weight: 500;
+    margin-left: 1rem;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    background: white;
+    border-radius: 12px;
+}
+
+.empty-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+}
+
+.empty-state h3 {
+    font-size: 1.5rem;
+    color: #2d3748;
+    margin-bottom: 0.5rem;
+}
+
+.empty-state p {
+    color: #718096;
+    margin-bottom: 2rem;
+}
+
+.floating-actions {
+    position: fixed;
+    bottom: 100px;
+    right: 20px;
+    z-index: 100;
+}
+
+.fab {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    text-decoration: none;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.fab:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+}
+
+.bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: white;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+    display: flex;
+    justify-content: space-around;
+    padding: 0.75rem;
+    z-index: 50;
+}
+
+.nav-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.5rem 1rem;
+    border: none;
+    background: none;
+    color: #4a5568;
+    font-size: 0.85rem;
+    cursor: pointer;
+    text-decoration: none;
+    transition: color 0.2s;
+    border-radius: 8px;
+}
+
+.nav-btn:hover {
+    background: #f7f9fc;
+    color: #667eea;
+}
+
+.nav-icon {
+    font-size: 1.5rem;
+}
+
+@media (max-width: 768px) {
+    .checklist-header {
+        padding: 1.5rem 1rem;
+        border-radius: 0 0 15px 15px;
+    }
+
+    .trip-info h1 {
+        font-size: 1.5rem;
+    }
+
+    .trip-meta {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .stat-value {
+        font-size: 1.5rem;
+    }
+
+    .category-title h2 {
+        font-size: 1rem;
+    }
+
+    .item-main {
+        flex-direction: column;
+    }
+
+    .item-weight {
+        margin-left: 0;
+        align-self: flex-end;
+    }
+
+    .bottom-nav {
+        padding: 0.5rem;
+    }
+
+    .nav-btn {
+        padding: 0.5rem;
+        font-size: 0.75rem;
+    }
+
+    .nav-icon {
+        font-size: 1.25rem;
+    }
+}
+</style>
+
+<script>
+// Fonction pour basculer l'état d'un item (coché/décoché)
+function toggleItem(itemId, isPacked) {
+    const item = document.querySelector(`[data-item-id="${itemId}"]`);
+    const weight = parseInt(item.dataset.weight);
+
+    // Mise à jour visuelle
+    if (isPacked) {
+        item.classList.add('packed');
+    } else {
+        item.classList.remove('packed');
+    }
+
+    // Envoi de la requête AJAX
+    fetch(`{% url 'vetements:valise_toggle_item' valise.pk 0 %}`.replace('/0/', `/${itemId}/`), {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            emballe: isPacked
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            updateProgress(data.stats);
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        // Revert l'état en cas d'erreur
+        if (isPacked) {
+            item.classList.remove('packed');
+            document.getElementById(`item-${itemId}`).checked = false;
+        } else {
+            item.classList.add('packed');
+            document.getElementById(`item-${itemId}`).checked = true;
+        }
+    });
+}
+
+// Mettre à jour la progression
+function updateProgress(stats) {
+    document.getElementById('packed-count').textContent = stats.packed;
+    document.getElementById('percentage').textContent = stats.percentage + '%';
+    document.getElementById('weight').textContent = stats.weight + 'kg';
+    document.getElementById('progress-bar').style.width = stats.percentage + '%';
+
+    // Mettre à jour les compteurs par catégorie
+    for (const [category, count] of Object.entries(stats.categories)) {
+        const catCount = document.getElementById(`cat-${category}-count`);
+        if (catCount) {
+            catCount.textContent = count;
+        }
+    }
+}
+
+// Basculer la visibilité d'une catégorie
+function toggleCategory(categoryName) {
+    const section = document.querySelector(`[data-category="${categoryName}"]`);
+    section.classList.toggle('collapsed');
+}
+
+// Tout cocher
+function markAllPacked() {
+    const checkboxes = document.querySelectorAll('.item-checkbox:not(:checked)');
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = true;
+        const itemId = checkbox.id.replace('item-', '');
+        toggleItem(parseInt(itemId), true);
+    });
+}
+
+// Animation de chargement
+document.addEventListener('DOMContentLoaded', function() {
+    const items = document.querySelectorAll('.checklist-item');
+    items.forEach((item, index) => {
+        item.style.animation = `fadeInUp 0.4s ease-out ${index * 0.05}s both`;
+    });
+});
+</script>
+
+<style>
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+</style>
+{% endblock %}

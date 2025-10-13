@@ -145,7 +145,7 @@
             <i class="material-icons large grey-text">sentiment_dissatisfied</i>
             <h5 class="grey-text">Aucun vêtement trouvé</h5>
             <p class="grey-text">Essayez de modifier vos filtres ou ajoutez de nouveaux vêtements à votre garde-robe.</p>
-            <a href="/admin/vetements/vetement/add/" class="btn waves-effect waves-light green" style="margin-top: 20px;">
+            <a href="{% url 'vetements:vetement_create' %}" class="btn waves-effect waves-light green" style="margin-top: 20px;">
                 <i class="material-icons left">add</i>Ajouter un vêtement
             </a>
         </div>
@@ -182,7 +182,7 @@
 
 <!-- Bouton flottant pour ajouter un vêtement -->
 <div class="fixed-action-btn">
-    <a class="btn-floating btn-large waves-effect waves-light green tooltipped" data-position="left" data-tooltip="Ajouter un vêtement" href="/admin/vetements/vetement/add/">
+    <a class="btn-floating btn-large waves-effect waves-light green tooltipped" data-position="left" data-tooltip="Ajouter un vêtement" href="{% url 'vetements:vetement_create' %}">
         <i class="material-icons">add</i>
     </a>
 </div>

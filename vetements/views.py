@@ -8,9 +8,13 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib.auth.models import User
 from django.contrib import messages
-from .models import (Vetement, Categorie, Tenue, Valise, Message, Amitie, AnnonceVente,
-                      FavoriAnnonce, TransactionVente, EvaluationVendeur, Couleur, Taille)
-from .forms import ValiseForm, ValiseVetementsForm, ValiseStatutForm
+from .models import (Vetement, Categorie, Tenue, Valise, ItemValise, Message, Amitie, AnnonceVente,
+                      FavoriAnnonce, TransactionVente, EvaluationVendeur, Couleur, Taille, EvenementTenue)
+from django.http import JsonResponse
+import json
+from .forms import ValiseForm, ValiseVetementsForm, ValiseStatutForm, VetementForm, EvenementForm
+import calendar
+from datetime import datetime, timedelta
 
 # Create your views here.
 
@@ -281,6 +285,9 @@ def tenue_detail(request, pk):
 @login_required
 def statistiques(request):
     """Page de statistiques détaillées"""
+    from datetime import datetime, timedelta
+    from collections import defaultdict
+
     vetements = Vetement.objects.filter(proprietaire=request.user)
 
     # Statistiques générales
@@ -311,6 +318,93 @@ def statistiques(request):
     # Les moins portés
     peu_portes = [v for v in vetements if v.peu_porte]
 
+    # ========================================
+    # NOUVELLES STATISTIQUES AVANCÉES
+    # ========================================
+
+    # 1. Coût par portage par catégorie
+    cout_par_categorie = []
+    for cat in par_categorie:
+        cat_nom = cat['categorie__nom']
+        vetements_cat = vetements.filter(categorie__nom=cat_nom).exclude(prix_achat__isnull=True).exclude(nombre_portage=0)
+        if vetements_cat.exists():
+            couts_cat = [v.cout_par_portage for v in vetements_cat if v.cout_par_portage]
+            if couts_cat:
+                cout_par_categorie.append({
+                    'categorie': cat_nom,
+                    'cout_moyen': sum(couts_cat) / len(couts_cat),
+                    'count': len(couts_cat)
+                })
+    cout_par_categorie = sorted(cout_par_categorie, key=lambda x: x['cout_moyen'])[:10]
+
+    # 2. Top 10 vêtements les plus rentables (coût par portage le plus bas)
+    plus_rentables = []
+    for v in vetements_avec_prix:
+        if v.cout_par_portage and v.nombre_portage >= 5:  # Au moins 5 portages pour être considéré
+            plus_rentables.append(v)
+    plus_rentables = sorted(plus_rentables, key=lambda x: x.cout_par_portage)[:10]
+
+    # 3. Utilisation par mois (12 derniers mois)
+    today = timezone.now().date()
+    utilisation_mensuelle = []
+    labels_mois = []
+
+    for i in range(11, -1, -1):  # 12 derniers mois
+        mois_debut = (today.replace(day=1) - timedelta(days=i*30)).replace(day=1)
+        if mois_debut.month == 12:
+            mois_fin = mois_debut.replace(year=mois_debut.year + 1, month=1, day=1) - timedelta(days=1)
+        else:
+            mois_fin = mois_debut.replace(month=mois_debut.month + 1, day=1) - timedelta(days=1)
+
+        # Compter les vêtements portés ce mois (dernière utilisation dans ce mois)
+        portages_mois = vetements.filter(
+            derniere_utilisation__gte=mois_debut,
+            derniere_utilisation__lte=mois_fin
+        ).count()
+
+        utilisation_mensuelle.append(portages_mois)
+        labels_mois.append(mois_debut.strftime('%b %Y'))
+
+    # 4. Alertes intelligentes - Vêtements jamais portés ou pas portés depuis longtemps
+    alertes = []
+    vetements_jamais_portes = vetements.filter(nombre_portage=0)
+    if vetements_jamais_portes.exists():
+        alertes.append({
+            'type': 'warning',
+            'titre': 'Vêtements jamais portés',
+            'message': f'{vetements_jamais_portes.count()} vêtement(s) n\'ont jamais été portés',
+            'count': vetements_jamais_portes.count(),
+            'icon': 'new_releases'
+        })
+
+    # Vêtements pas portés depuis plus de 6 mois
+    six_mois_ago = today - timedelta(days=180)
+    vetements_anciens = vetements.filter(
+        derniere_utilisation__lt=six_mois_ago
+    ).exclude(nombre_portage=0)
+    if vetements_anciens.exists():
+        alertes.append({
+            'type': 'info',
+            'titre': 'Pas portés depuis 6+ mois',
+            'message': f'{vetements_anciens.count()} vêtement(s) n\'ont pas été portés depuis plus de 6 mois',
+            'count': vetements_anciens.count(),
+            'icon': 'schedule'
+        })
+
+    # 5. Palette de couleurs dominante (top 5)
+    couleurs_dominantes = vetements.exclude(couleur__isnull=True).values(
+        'couleur__nom', 'couleur__code_hex'
+    ).annotate(count=Count('id')).order_by('-count')[:5]
+
+    # 6. Statistiques de valeur
+    valeur_portee = sum([v.prix_achat for v in vetements.filter(nombre_portage__gt=0) if v.prix_achat])
+    valeur_non_portee = sum([v.prix_achat for v in vetements.filter(nombre_portage=0) if v.prix_achat])
+
+    # 7. Taux de rotation (vêtements portés dans les 30 derniers jours)
+    trente_jours_ago = today - timedelta(days=30)
+    vetements_recents = vetements.filter(derniere_utilisation__gte=trente_jours_ago).count()
+    taux_rotation = (vetements_recents / total_vetements * 100) if total_vetements > 0 else 0
+
     context = {
         'total_vetements': total_vetements,
         'total_depense': total_depense,
@@ -321,6 +415,17 @@ def statistiques(request):
         'cout_moyen_portage': cout_moyen_portage,
         'plus_portes': plus_portes,
         'peu_portes': peu_portes,
+        # Nouvelles statistiques
+        'cout_par_categorie': cout_par_categorie,
+        'plus_rentables': plus_rentables,
+        'utilisation_mensuelle': utilisation_mensuelle,
+        'labels_mois': labels_mois,
+        'alertes': alertes,
+        'couleurs_dominantes': couleurs_dominantes,
+        'valeur_portee': valeur_portee,
+        'valeur_non_portee': valeur_non_portee,
+        'taux_rotation': taux_rotation,
+        'vetements_recents': vetements_recents,
     }
     return render(request, 'vetements/statistiques.html', context)
 
@@ -1112,29 +1217,49 @@ def valise_edit(request, pk):
 def valise_edit_content(request, pk):
     """Modifier le contenu (vêtements) d'une valise"""
     valise = get_object_or_404(Valise, pk=pk, proprietaire=request.user)
-    
+
     if request.method == 'POST':
         form = ValiseVetementsForm(request.user, valise, request.POST)
         if form.is_valid():
-            # Vider d'abord la valise
-            valise.vetements.clear()
+            # Vider d'abord les items de la valise (nouveau système)
+            valise.items.all().delete()
             valise.tenues.clear()
-            
-            # Ajouter les vêtements sélectionnés
+
+            # Ajouter les vêtements sélectionnés en créant des ItemValise
             for field_name, vetement_ids in form.cleaned_data.items():
                 if field_name.startswith('vetements_') and vetement_ids:
+                    # Extraire la catégorie du nom du champ (ex: 'vetements_hauts' -> 'hauts')
+                    categorie_prefix = field_name.replace('vetements_', '')
+
+                    # Mapper les catégories aux catégories de valise
+                    categorie_map = {
+                        'hauts': 'vetements',
+                        'bas': 'vetements',
+                        'chaussures': 'chaussures',
+                        'accessoires': 'accessoires',
+                        'sous_vetements': 'sous_vetements',
+                    }
+                    categorie_valise = categorie_map.get(categorie_prefix, 'vetements')
+
                     for vetement_id in vetement_ids:
                         vetement = Vetement.objects.get(id=vetement_id, proprietaire=request.user)
-                        valise.vetements.add(vetement)
+                        # Créer un ItemValise pour chaque vêtement
+                        ItemValise.objects.create(
+                            valise=valise,
+                            vetement=vetement,
+                            emballe=False,
+                            categorie_valise=categorie_valise,
+                            poids_estime=200  # Poids par défaut en grammes
+                        )
                 elif field_name == 'tenues' and vetement_ids:
                     for tenue in vetement_ids:
                         valise.tenues.add(tenue)
-            
+
             messages.success(request, f"Contenu de la valise '{valise.nom}' mis à jour!")
             return redirect('vetements:valise_detail', pk=valise.pk)
     else:
         form = ValiseVetementsForm(request.user, valise)
-    
+
     context = {
         'form': form,
         'valise': valise,
@@ -1179,7 +1304,7 @@ def valise_update_status(request, pk):
 def valise_copy(request, pk):
     """Copier une valise existante pour un nouveau voyage"""
     valise_source = get_object_or_404(Valise, pk=pk, proprietaire=request.user)
-    
+
     if request.method == 'POST':
         form = ValiseForm(request.POST)
         if form.is_valid():
@@ -1187,11 +1312,22 @@ def valise_copy(request, pk):
             nouvelle_valise = form.save(commit=False)
             nouvelle_valise.proprietaire = request.user
             nouvelle_valise.save()
-            
-            # Copier les vêtements et tenues
-            nouvelle_valise.vetements.set(valise_source.vetements.all())
+
+            # Copier les items de la valise source (nouveau système)
+            for item_source in valise_source.items.all():
+                ItemValise.objects.create(
+                    valise=nouvelle_valise,
+                    vetement=item_source.vetement,
+                    emballe=False,  # Réinitialiser l'état emballé
+                    categorie_valise=item_source.categorie_valise,
+                    poids_estime=item_source.poids_estime,
+                    ordre=item_source.ordre,
+                    note=item_source.note
+                )
+
+            # Copier les tenues
             nouvelle_valise.tenues.set(valise_source.tenues.all())
-            
+
             messages.success(request, f"Valise copiée! Nouvelle valise '{nouvelle_valise.nom}' créée.")
             return redirect('vetements:valise_detail', pk=nouvelle_valise.pk)
     else:
@@ -1201,7 +1337,7 @@ def valise_copy(request, pk):
             'climat': valise_source.climat,
             'liste_articles_supplementaires': valise_source.liste_articles_supplementaires
         })
-    
+
     context = {
         'form': form,
         'valise_source': valise_source,
@@ -1209,3 +1345,315 @@ def valise_copy(request, pk):
         'submit_text': 'Créer la copie'
     }
     return render(request, 'vetements/valise_copy_form.html', context)
+
+
+# ========================================
+# CHECKLIST INTERACTIVE POUR VALISES
+# ========================================
+
+@login_required
+def valise_checklist(request, pk):
+    """Vue de la checklist interactive pour préparer sa valise"""
+    valise = get_object_or_404(Valise, pk=pk, proprietaire=request.user)
+
+    # Grouper les items par catégorie
+    items_par_categorie = {}
+    for item in valise.items.all().order_by('ordre', 'vetement__nom'):
+        categorie = item.categorie_valise
+        if categorie not in items_par_categorie:
+            items_par_categorie[categorie] = []
+        items_par_categorie[categorie].append(item)
+
+    context = {
+        'valise': valise,
+        'items_par_categorie': items_par_categorie,
+    }
+    return render(request, 'vetements/valise_checklist.html', context)
+
+
+@login_required
+def valise_toggle_item(request, pk, item_id):
+    """Basculer l'état emballé d'un item (AJAX)"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Méthode non autorisée'}, status=405)
+
+    valise = get_object_or_404(Valise, pk=pk, proprietaire=request.user)
+    item = get_object_or_404(ItemValise, pk=item_id, valise=valise)
+
+    try:
+        # Récupérer le nouvel état depuis le corps de la requête
+        data = json.loads(request.body)
+        item.emballe = data.get('emballe', not item.emballe)
+        item.save()
+
+        # Retourner les statistiques mises à jour
+        stats = {
+            'total': valise.items.count(),
+            'emballe': valise.nombre_emballe,
+            'pourcentage': valise.pourcentage_completion,
+            'poids_kg': float(valise.poids_total_kg),
+        }
+
+        return JsonResponse({
+            'success': True,
+            'emballe': item.emballe,
+            'stats': stats
+        })
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
+
+@login_required
+def valise_add_items(request, pk):
+    """Ajouter des vêtements à la valise depuis la checklist"""
+    valise = get_object_or_404(Valise, pk=pk, proprietaire=request.user)
+
+    if request.method == 'POST':
+        vetements_ids = request.POST.getlist('vetements')
+        categorie = request.POST.get('categorie', 'vetements')
+
+        for vetement_id in vetements_ids:
+            vetement = get_object_or_404(Vetement, pk=vetement_id, proprietaire=request.user)
+            # Vérifier que le vêtement n'est pas déjà dans la valise
+            if not valise.items.filter(vetement=vetement).exists():
+                ItemValise.objects.create(
+                    valise=valise,
+                    vetement=vetement,
+                    emballe=False,
+                    categorie_valise=categorie,
+                    poids_estime=200
+                )
+
+        messages.success(request, f"{len(vetements_ids)} vêtement(s) ajouté(s) à la valise!")
+        return redirect('vetements:valise_checklist', pk=valise.pk)
+
+    # GET: afficher le formulaire
+    # Vêtements déjà dans la valise
+    vetements_dans_valise = valise.items.values_list('vetement_id', flat=True)
+
+    # Vêtements disponibles (pas encore dans la valise)
+    vetements_disponibles = Vetement.objects.filter(
+        proprietaire=request.user
+    ).exclude(
+        id__in=vetements_dans_valise
+    ).order_by('categorie__nom', 'nom')
+
+    context = {
+        'valise': valise,
+        'vetements_disponibles': vetements_disponibles,
+    }
+    return render(request, 'vetements/valise_add_items.html', context)
+
+
+# ========================================
+# GESTION DES VÊTEMENTS POUR UTILISATEURS
+# ========================================
+
+@login_required
+def vetement_create(request):
+    """Créer un nouveau vêtement"""
+    if request.method == 'POST':
+        form = VetementForm(request.POST, request.FILES)
+        if form.is_valid():
+            vetement = form.save(commit=False)
+            vetement.proprietaire = request.user
+            vetement.save()
+            messages.success(request, f"Vêtement '{vetement.nom}' ajouté avec succès!")
+            return redirect('vetements:detail_vetement', pk=vetement.pk)
+    else:
+        form = VetementForm()
+
+    context = {
+        'form': form,
+        'title': 'Ajouter un nouveau vêtement',
+        'submit_text': 'Ajouter le vêtement'
+    }
+    return render(request, 'vetements/vetement_form.html', context)
+
+
+@login_required
+def vetement_edit(request, pk):
+    """Modifier un vêtement existant"""
+    vetement = get_object_or_404(Vetement, pk=pk, proprietaire=request.user)
+
+    if request.method == 'POST':
+        form = VetementForm(request.POST, request.FILES, instance=vetement)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"Vêtement '{vetement.nom}' modifié avec succès!")
+            return redirect('vetements:detail_vetement', pk=vetement.pk)
+    else:
+        form = VetementForm(instance=vetement)
+
+    context = {
+        'form': form,
+        'vetement': vetement,
+        'title': f'Modifier "{vetement.nom}"',
+        'submit_text': 'Sauvegarder les modifications'
+    }
+    return render(request, 'vetements/vetement_form.html', context)
+
+
+@login_required
+def vetement_delete(request, pk):
+    """Supprimer un vêtement"""
+    vetement = get_object_or_404(Vetement, pk=pk, proprietaire=request.user)
+
+    if request.method == 'POST':
+        nom_vetement = vetement.nom
+        vetement.delete()
+        messages.success(request, f"Vêtement '{nom_vetement}' supprimé avec succès!")
+        return redirect('vetements:liste_vetements')
+
+    context = {
+        'vetement': vetement
+    }
+    return render(request, 'vetements/vetement_confirm_delete.html', context)
+
+
+# ========================================
+# GESTION DU CALENDRIER
+# ========================================
+
+@login_required
+def calendrier_mensuel(request):
+    """Vue mensuelle du calendrier avec événements et tenues planifiées"""
+    # Récupérer le mois et l'année depuis les paramètres URL
+    today = date.today()
+    year = int(request.GET.get('year', today.year))
+    month = int(request.GET.get('month', today.month))
+
+    # Gérer la navigation précédent/suivant
+    if month < 1:
+        month = 12
+        year -= 1
+    elif month > 12:
+        month = 1
+        year += 1
+
+    # Créer le calendrier du mois
+    cal = calendar.monthcalendar(year, month)
+
+    # Récupérer les événements du mois
+    mois_debut = date(year, month, 1)
+    if month == 12:
+        mois_fin = date(year + 1, 1, 1) - timedelta(days=1)
+    else:
+        mois_fin = date(year, month + 1, 1) - timedelta(days=1)
+
+    evenements = EvenementTenue.objects.filter(
+        proprietaire=request.user,
+        date__gte=mois_debut,
+        date__lte=mois_fin
+    ).select_related('tenue').order_by('date', 'heure_debut')
+
+    # Organiser les événements par date
+    evenements_par_jour = {}
+    for evenement in evenements:
+        jour = evenement.date.day
+        if jour not in evenements_par_jour:
+            evenements_par_jour[jour] = []
+        evenements_par_jour[jour].append(evenement)
+
+    # Calculer les mois précédent et suivant
+    if month == 1:
+        prev_month = 12
+        prev_year = year - 1
+    else:
+        prev_month = month - 1
+        prev_year = year
+
+    if month == 12:
+        next_month = 1
+        next_year = year + 1
+    else:
+        next_month = month + 1
+        next_year = year
+
+    context = {
+        'calendar': cal,
+        'year': year,
+        'month': month,
+        'month_name': calendar.month_name[month],
+        'evenements_par_jour': evenements_par_jour,
+        'today': today,
+        'prev_month': prev_month,
+        'prev_year': prev_year,
+        'next_month': next_month,
+        'next_year': next_year,
+    }
+    return render(request, 'vetements/calendrier_mensuel.html', context)
+
+
+@login_required
+def evenement_create(request):
+    """Créer un nouvel événement"""
+    # Récupérer la date depuis les paramètres URL (si fournie)
+    date_param = request.GET.get('date')
+    initial_date = None
+    if date_param:
+        try:
+            initial_date = datetime.strptime(date_param, '%Y-%m-%d').date()
+        except ValueError:
+            pass
+
+    if request.method == 'POST':
+        form = EvenementForm(user=request.user, data=request.POST)
+        if form.is_valid():
+            evenement = form.save(commit=False)
+            evenement.proprietaire = request.user
+            evenement.save()
+            messages.success(request, f"Événement '{evenement.titre}' créé avec succès!")
+            return redirect('vetements:calendrier_mensuel')
+    else:
+        initial = {}
+        if initial_date:
+            initial['date'] = initial_date
+        form = EvenementForm(user=request.user, initial=initial)
+
+    context = {
+        'form': form,
+        'title': 'Créer un nouvel événement',
+        'submit_text': 'Créer l\'événement'
+    }
+    return render(request, 'vetements/evenement_form.html', context)
+
+
+@login_required
+def evenement_edit(request, pk):
+    """Modifier un événement existant"""
+    evenement = get_object_or_404(EvenementTenue, pk=pk, proprietaire=request.user)
+
+    if request.method == 'POST':
+        form = EvenementForm(user=request.user, data=request.POST, instance=evenement)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f"Événement '{evenement.titre}' modifié avec succès!")
+            return redirect('vetements:calendrier_mensuel')
+    else:
+        form = EvenementForm(user=request.user, instance=evenement)
+
+    context = {
+        'form': form,
+        'evenement': evenement,
+        'title': f'Modifier "{evenement.titre}"',
+        'submit_text': 'Sauvegarder les modifications'
+    }
+    return render(request, 'vetements/evenement_form.html', context)
+
+
+@login_required
+def evenement_delete(request, pk):
+    """Supprimer un événement"""
+    evenement = get_object_or_404(EvenementTenue, pk=pk, proprietaire=request.user)
+
+    if request.method == 'POST':
+        titre_evenement = evenement.titre
+        evenement.delete()
+        messages.success(request, f"Événement '{titre_evenement}' supprimé avec succès!")
+        return redirect('vetements:calendrier_mensuel')
+
+    context = {
+        'evenement': evenement
+    }
+    return render(request, 'vetements/evenement_confirm_delete.html', context)

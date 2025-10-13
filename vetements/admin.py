@@ -3,7 +3,7 @@ from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import User, Group
 from django.db.models import Q, Count
 from django.utils.html import format_html
-from .models import Categorie, Couleur, Taille, Vetement, Tenue, Valise, Message, Amitie, AnnonceVente, ParametresSite, RapportModeration, ActionModeration, FavoriAnnonce, TransactionVente, EvaluationVendeur
+from .models import Categorie, Couleur, Taille, Vetement, Tenue, Valise, ItemValise, Message, Amitie, AnnonceVente, ParametresSite, RapportModeration, ActionModeration, FavoriAnnonce, TransactionVente, EvaluationVendeur
 
 
 # Personnalisation du site admin pour restreindre l'accès
@@ -189,6 +189,7 @@ class VetementAdmin(admin.ModelAdmin):
     list_filter = ['categorie', 'genre', 'saison', 'etat', 'favori', 'a_laver', 'a_repasser', 'prete', 'date_ajout']
     search_fields = ['nom', 'marque', 'description', 'emplacement', 'notes']
     readonly_fields = ['date_ajout', 'date_modification']
+    autocomplete_fields = []  # Pour permettre l'autocomplete dans d'autres modèles
 
     fieldsets = (
         ('Informations principales', {
@@ -338,14 +339,23 @@ class TenuAdmin(admin.ModelAdmin):
     incrementer_portage_tenue.short_description = "Incrémenter le nombre de portages"
 
 
+class ItemValiseInline(admin.TabularInline):
+    """Inline pour gérer les items d'une valise"""
+    model = ItemValise
+    extra = 1
+    fields = ['vetement', 'categorie_valise', 'poids_estime', 'emballe', 'note', 'ordre']
+    autocomplete_fields = ['vetement']
+
+
 @admin.register(Valise, site=restricted_admin_site)
 class ValiseAdmin(admin.ModelAdmin):
     list_display = ['nom', 'destination', 'type_voyage', 'date_depart', 'date_retour', 'duree_affichage', 'statut', 'nombre_items']
     list_filter = ['type_voyage', 'statut', 'date_depart', 'climat']
     search_fields = ['nom', 'destination', 'notes']
-    filter_horizontal = ['vetements', 'tenues']
+    filter_horizontal = ['tenues']
     readonly_fields = ['date_creation', 'date_modification']
     date_hierarchy = 'date_depart'
+    inlines = [ItemValiseInline]
 
     fieldsets = (
         ('Informations du voyage', {
@@ -357,8 +367,12 @@ class ValiseAdmin(admin.ModelAdmin):
         ('Météo et Climat', {
             'fields': ('meteo_prevue', 'climat')
         }),
+        ('Poids', {
+            'fields': ('poids_max',)
+        }),
         ('Contenu de la valise', {
-            'fields': ('vetements', 'tenues')
+            'fields': ('tenues',),
+            'description': 'Les vêtements individuels sont gérés via l\'interface de checklist interactive'
         }),
         ('Organisation', {
             'fields': ('liste_articles_supplementaires', 'checklist_faite')
@@ -387,11 +401,8 @@ class ValiseAdmin(admin.ModelAdmin):
         super().save_model(request, obj, form, change)
 
     def formfield_for_manytomany(self, db_field, request, **kwargs):
-        """Limiter les vêtements et tenues disponibles à ceux de l'utilisateur"""
-        if db_field.name == "vetements":
-            if not request.user.is_superuser:
-                kwargs["queryset"] = Vetement.objects.filter(proprietaire=request.user)
-        elif db_field.name == "tenues":
+        """Limiter les tenues disponibles à celles de l'utilisateur"""
+        if db_field.name == "tenues":
             if not request.user.is_superuser:
                 kwargs["queryset"] = Tenue.objects.filter(proprietaire=request.user)
         return super().formfield_for_manytomany(db_field, request, **kwargs)

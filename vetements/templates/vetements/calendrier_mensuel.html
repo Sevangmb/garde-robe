@@ -1,0 +1,246 @@
+{% extends 'vetements/base.html' %}
+
+{% block title %}Calendrier - Ma Garde-Robe{% endblock %}
+
+{% block content %}
+<style>
+    .calendar-header {
+        background: linear-gradient(135deg, #B09199 0%, #8C7A9E 100%);
+        color: white;
+        padding: 30px;
+        border-radius: 12px;
+        margin-bottom: 30px;
+        box-shadow: 0 4px 12px rgba(176, 145, 153, 0.3);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .calendar-header h1 {
+        margin: 0;
+        font-size: 2rem;
+        font-weight: 300;
+    }
+
+    .calendar-nav {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+    }
+
+    .calendar-nav a {
+        background: rgba(255, 255, 255, 0.2);
+        color: white;
+        padding: 8px 16px;
+        border-radius: 6px;
+        text-decoration: none;
+        transition: background 0.3s;
+    }
+
+    .calendar-nav a:hover {
+        background: rgba(255, 255, 255, 0.3);
+    }
+
+    .calendar-container {
+        background: white;
+        border-radius: 12px;
+        padding: 30px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    .calendar-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .calendar-table th {
+        background: #F5F3F0;
+        color: #3A3632;
+        padding: 15px;
+        text-align: center;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        letter-spacing: 0.5px;
+    }
+
+    .calendar-table td {
+        border: 1px solid #E8E6E3;
+        padding: 0;
+        height: 120px;
+        vertical-align: top;
+        position: relative;
+    }
+
+    .calendar-day {
+        padding: 10px;
+        min-height: 120px;
+        cursor: pointer;
+        transition: background 0.3s;
+    }
+
+    .calendar-day:hover {
+        background: #FDFBF7;
+    }
+
+    .calendar-day-number {
+        font-weight: 600;
+        color: #3A3632;
+        margin-bottom: 5px;
+    }
+
+    .calendar-day.other-month {
+        background: #FAFAFA;
+        opacity: 0.5;
+    }
+
+    .calendar-day.today {
+        background: rgba(176, 145, 153, 0.1);
+    }
+
+    .calendar-day.today .calendar-day-number {
+        background: #B09199;
+        color: white;
+        display: inline-block;
+        width: 30px;
+        height: 30px;
+        line-height: 30px;
+        text-align: center;
+        border-radius: 50%;
+    }
+
+    .calendar-event {
+        background: #8C7A9E;
+        color: white;
+        padding: 4px 8px;
+        margin-bottom: 4px;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        cursor: pointer;
+        transition: background 0.3s;
+    }
+
+    .calendar-event:hover {
+        background: #7A6A8E;
+    }
+
+    .calendar-event.type-travail {
+        background: #4A90E2;
+    }
+
+    .calendar-event.type-reunion {
+        background: #E94E77;
+    }
+
+    .calendar-event.type-sortie {
+        background: #F5A623;
+    }
+
+    .calendar-event.type-sport {
+        background: #7ED321;
+    }
+
+    .actions {
+        display: flex;
+        gap: 15px;
+        margin-top: 20px;
+    }
+
+    @media (max-width: 768px) {
+        .calendar-header {
+            flex-direction: column;
+            gap: 15px;
+            text-align: center;
+        }
+
+        .calendar-table td {
+            height: 80px;
+        }
+
+        .calendar-day {
+            min-height: 80px;
+            padding: 5px;
+        }
+
+        .calendar-event {
+            font-size: 0.65rem;
+            padding: 2px 4px;
+        }
+    }
+</style>
+
+<div class="calendar-header">
+    <h1><i class="material-icons" style="vertical-align: middle; margin-right: 10px;">calendar_today</i>{{ month_name }} {{ year }}</h1>
+    <div class="calendar-nav">
+        <a href="?year={{ prev_year }}&month={{ prev_month }}">
+            <i class="material-icons" style="vertical-align: middle;">chevron_left</i> Précédent
+        </a>
+        <a href="?year={{ today.year }}&month={{ today.month }}">Aujourd'hui</a>
+        <a href="?year={{ next_year }}&month={{ next_month }}">
+            Suivant <i class="material-icons" style="vertical-align: middle;">chevron_right</i>
+        </a>
+    </div>
+</div>
+
+<div class="calendar-container">
+    <table class="calendar-table">
+        <thead>
+            <tr>
+                <th>Lundi</th>
+                <th>Mardi</th>
+                <th>Mercredi</th>
+                <th>Jeudi</th>
+                <th>Vendredi</th>
+                <th>Samedi</th>
+                <th>Dimanche</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for semaine in calendar %}
+            <tr>
+                {% for jour in semaine %}
+                <td>
+                    {% if jour != 0 %}
+                    <div class="calendar-day {% if jour == today.day and month == today.month and year == today.year %}today{% endif %}"
+                         onclick="window.location.href='{% url 'vetements:evenement_create' %}?date={{ year }}-{{ month|stringformat:'02d' }}-{{ jour|stringformat:'02d' }}'">
+                        <div class="calendar-day-number">{{ jour }}</div>
+
+                        {% if jour in evenements_par_jour %}
+                            {% for evenement in evenements_par_jour|get_item:jour %}
+                            <div class="calendar-event type-{{ evenement.type_evenement }}"
+                                 onclick="event.stopPropagation(); window.location.href='{% url 'vetements:evenement_edit' evenement.pk %}'">
+                                {% if evenement.toute_journee %}
+                                    📅 {{ evenement.titre }}
+                                {% else %}
+                                    {{ evenement.heure_debut|time:'H:i' }} {{ evenement.titre }}
+                                {% endif %}
+                                {% if evenement.tenue %}
+                                    👔
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                    {% else %}
+                    <div class="calendar-day other-month"></div>
+                    {% endif %}
+                </td>
+                {% endfor %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="actions">
+    <a href="{% url 'vetements:accueil' %}" class="btn btn-secondary">
+        <i class="material-icons left">arrow_back</i>Retour au tableau de bord
+    </a>
+    <a href="{% url 'vetements:evenement_create' %}" class="btn">
+        <i class="material-icons left">add</i>Créer un événement
+    </a>
+</div>
+{% endblock %}

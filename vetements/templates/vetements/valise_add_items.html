@@ -1,0 +1,119 @@
+{% extends "vetements/base.html" %}
+{% load static %}
+
+{% block title %}Ajouter des vêtements - {{ valise.nom }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Ajouter des vêtements à "{{ valise.nom }}"</h2>
+        <a href="{% url 'vetements:valise_checklist' valise.pk %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Retour à la checklist
+        </a>
+    </div>
+
+    <form method="post" id="addItemsForm">
+        {% csrf_token %}
+
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="mb-0">Catégorie de destination</h5>
+            </div>
+            <div class="card-body">
+                <select name="categorie" class="form-select" required>
+                    <option value="vetements">👕 Vêtements</option>
+                    <option value="chaussures">👟 Chaussures</option>
+                    <option value="sous_vetements">🩲 Sous-vêtements</option>
+                    <option value="accessoires">🎩 Accessoires</option>
+                    <option value="toilette">🧴 Trousse de toilette</option>
+                    <option value="electronique">📱 Électronique</option>
+                    <option value="documents">📄 Documents</option>
+                    <option value="sante">💊 Santé & Médicaments</option>
+                    <option value="autre">📦 Autre</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Vêtements disponibles</h5>
+                <div>
+                    <button type="button" class="btn btn-sm btn-outline-primary" onclick="selectAll()">
+                        Tout sélectionner
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" onclick="deselectAll()">
+                        Tout désélectionner
+                    </button>
+                </div>
+            </div>
+            <div class="card-body" style="max-height: 500px; overflow-y: auto;">
+                {% if vetements_disponibles %}
+                    <div class="row g-3">
+                        {% for vetement in vetements_disponibles %}
+                        <div class="col-md-6 col-lg-4">
+                            <div class="card h-100">
+                                <label class="form-check-label" for="vetement_{{ vetement.id }}" style="cursor: pointer;">
+                                    {% if vetement.image %}
+                                        <img src="{{ vetement.image.url }}" class="card-img-top" alt="{{ vetement.nom }}" style="height: 200px; object-fit: cover;">
+                                    {% else %}
+                                        <div class="card-img-top bg-secondary d-flex align-items-center justify-content-center" style="height: 200px;">
+                                            <i class="bi bi-image" style="font-size: 3rem; color: white;"></i>
+                                        </div>
+                                    {% endif %}
+                                    <div class="card-body">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" name="vetements" value="{{ vetement.id }}" id="vetement_{{ vetement.id }}">
+                                            <h6 class="card-title mb-1">{{ vetement.nom }}</h6>
+                                        </div>
+                                        <p class="card-text small text-muted mb-0">
+                                            {{ vetement.categorie.nom }}
+                                            {% if vetement.couleur %} • {{ vetement.couleur.nom }}{% endif %}
+                                            {% if vetement.taille %} • Taille {{ vetement.taille.nom }}{% endif %}
+                                        </p>
+                                        {% if vetement.a_laver %}
+                                            <span class="badge bg-warning text-dark mt-1">🧺 À laver</span>
+                                        {% endif %}
+                                        {% if vetement.a_repasser %}
+                                            <span class="badge bg-info mt-1">👔 À repasser</span>
+                                        {% endif %}
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="alert alert-info" role="alert">
+                        <i class="bi bi-info-circle"></i> Tous vos vêtements sont déjà dans cette valise !
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if vetements_disponibles %}
+        <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-3">
+            <a href="{% url 'vetements:valise_checklist' valise.pk %}" class="btn btn-secondary">
+                Annuler
+            </a>
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> Ajouter les vêtements sélectionnés
+            </button>
+        </div>
+        {% endif %}
+    </form>
+</div>
+
+<script>
+function selectAll() {
+    document.querySelectorAll('input[name="vetements"]').forEach(checkbox => {
+        checkbox.checked = true;
+    });
+}
+
+function deselectAll() {
+    document.querySelectorAll('input[name="vetements"]').forEach(checkbox => {
+        checkbox.checked = false;
+    });
+}
+</script>
+{% endblock %}
