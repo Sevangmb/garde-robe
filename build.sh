@@ -10,3 +10,6 @@ python manage.py collectstatic --no-input --settings=gestion_vetements.settings_
 
 # Run migrations
 python manage.py migrate --settings=gestion_vetements.settings_prod
+
+# Create superuser automatically (only if it doesn't exist)
+python create_admin.py

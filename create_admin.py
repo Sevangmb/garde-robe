@@ -15,7 +15,9 @@ if sys.platform == 'win32':
     sys.stderr = codecs.getwriter('utf-8')(sys.stderr.buffer, 'strict')
 
 # Configuration Django
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'gestion_vetements.settings')
+# Use production settings if available, otherwise default
+if 'DJANGO_SETTINGS_MODULE' not in os.environ:
+    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'gestion_vetements.settings')
 django.setup()
 
 from django.contrib.auth.models import User
