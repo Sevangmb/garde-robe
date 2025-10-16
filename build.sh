@@ -6,10 +6,10 @@ set -o errexit
 pip install -r requirements.txt
 
 # Collect static files
-python manage.py collectstatic --no-input --settings=gestion_vetements.settings_prod
+python manage.py collectstatic --no-input
 
 # Run migrations
-python manage.py migrate --settings=gestion_vetements.settings_prod
+python manage.py migrate
 
 # Create superuser automatically (only if it doesn't exist)
 python create_admin.py

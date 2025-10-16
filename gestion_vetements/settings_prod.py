@@ -4,15 +4,15 @@ Architecture hybride : Render (Django) + Unraid (PostgreSQL + Media)
 """
 
 from .settings import *
-from decouple import config
+from decouple import config, Csv
 
 # SECURITY
 DEBUG = False
 SECRET_KEY = config('SECRET_KEY')
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', cast=Csv())
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='garde-robe-rryt.onrender.com', cast=Csv())
 
 # CSRF
-CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', cast=Csv())
+CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='https://garde-robe-rryt.onrender.com', cast=Csv())
 
 # Database PostgreSQL sur Unraid (via tunnel Cloudflare ou DynDNS)
 DATABASES = {
