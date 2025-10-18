@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta http-equiv="Content-Security-Policy" content="default-src * 'self' 'unsafe-inline' 'unsafe-eval' data: gap: content:">
+    <title>Ma Garde-Robe</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body, html {
+            height: 100%;
+            overflow: hidden;
+        }
+
+        #app-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+            display: block;
+        }
+
+        /* Loading screen */
+        #loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #B09199 0%, #8C7A9E 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease;
+        }
+
+        #loading.hide {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .logo {
+            width: 120px;
+            height: 120px;
+            background: white;
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 60px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+
+        .app-name {
+            color: white;
+            font-size: 28px;
+            font-weight: 300;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin-bottom: 20px;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Error message */
+        #error-message {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            background: #ff5252;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            z-index: 10000;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+        }
+
+        #error-message.show {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading">
+        <div class="logo">👔</div>
+        <div class="app-name">Ma Garde-Robe</div>
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Error Message -->
+    <div id="error-message"></div>
+
+    <!-- App Frame -->
+    <iframe id="app-frame"></iframe>
+
+    <script type="module">
+        // Configuration du serveur
+        // IMPORTANT: Remplacer cette URL par l'adresse de votre serveur Django
+        // const SERVER_URL = 'http://10.0.2.2:8000';  // Pour émulateur Android
+        // const SERVER_URL = 'http://192.168.1.133:8000';  // Pour appareil physique sur le même réseau WiFi
+        const SERVER_URL = 'https://garde-robe-rryt.onrender.com';  // Production sur Render.com
+
+        const appFrame = document.getElementById('app-frame');
+        const loading = document.getElementById('loading');
+        const errorMessage = document.getElementById('error-message');
+
+        // Fonction pour afficher une erreur
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.classList.add('show');
+            setTimeout(() => {
+                errorMessage.classList.remove('show');
+            }, 5000);
+        }
+
+        // Vérifier la connexion au serveur
+        async function checkServer() {
+            try {
+                const response = await fetch(SERVER_URL, {
+                    method: 'HEAD',
+                    mode: 'no-cors'
+                });
+                return true;
+            } catch (error) {
+                return false;
+            }
+        }
+
+        // Charger l'application
+        async function loadApp() {
+            // Vérifier la connexion
+            const serverAvailable = await checkServer();
+
+            if (!serverAvailable) {
+                loading.classList.add('hide');
+                showError('Impossible de se connecter au serveur. Vérifiez votre connexion.');
+
+                // Réessayer après 5 secondes
+                setTimeout(loadApp, 5000);
+                return;
+            }
+
+            // Charger l'application dans l'iframe
+            appFrame.src = SERVER_URL;
+
+            // Masquer le loading après le chargement
+            appFrame.onload = () => {
+                setTimeout(() => {
+                    loading.classList.add('hide');
+                }, 500);
+            };
+
+            // Gérer les erreurs de chargement
+            appFrame.onerror = () => {
+                loading.classList.add('hide');
+                showError('Erreur lors du chargement de l\'application.');
+            };
+        }
+
+        // Démarrer l'application au chargement de la page
+        window.addEventListener('DOMContentLoaded', loadApp);
+
+        // Gérer la reconnexion
+        window.addEventListener('online', () => {
+            showError('Connexion rétablie.');
+            loadApp();
+        });
+
+        window.addEventListener('offline', () => {
+            showError('Connexion perdue. Vérifiez votre connexion Internet.');
+        });
+    </script>
+
+    <!-- Capacitor -->
+    <script type="module">
+        import { Capacitor } from '@capacitor/core';
+
+        // Vérifier si on est sur mobile
+        const platform = Capacitor.getPlatform();
+        console.log('Platform:', platform);
+
+        // Configuration spécifique à la plateforme
+        if (platform === 'android' || platform === 'ios') {
+            // L'app tourne en mode natif
+            console.log('Running in native mode');
+        } else {
+            // L'app tourne dans un navigateur
+            console.log('Running in web mode');
+        }
+    </script>
+</body>
+</html>
