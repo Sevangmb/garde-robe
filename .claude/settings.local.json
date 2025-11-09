@@ -24,7 +24,15 @@
       "Bash(java:*)",
       "Bash(cat:*)",
       "Read(//c/Users/sevans/Desktop/cmdline-tools/**)",
-      "Bash(where java)"
+      "Bash(where java)",
+      "Bash(git commit:*)",
+      "Bash(git branch:*)",
+      "Bash(git remote add:*)",
+      "Bash(git push:*)",
+      "Bash(gh repo create:*)",
+      "Bash(git fetch:*)",
+      "Bash(git pull:*)",
+      "Bash(git stash:*)"
     ],
     "deny": [],
     "ask": []
