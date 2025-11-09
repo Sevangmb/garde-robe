@@ -49,7 +49,7 @@ SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
-X_FRAME_OPTIONS = 'SAMEORIGIN'  # Pour iframe app mobile
+X_FRAME_OPTIONS = 'ALLOWALL'  # Pour permettre iframe dans app mobile Capacitor
 
 # CORS pour l'app mobile
 CORS_ALLOW_ALL_ORIGINS = False
